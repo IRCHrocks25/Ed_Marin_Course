@@ -1,0 +1,178 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Add Lesson - {{ course.name }}{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <!-- Header -->
+    <div class="mb-8">
+        <a href="{% url 'course_lessons' course.slug %}" class="text-cyan-electric hover:text-cyan-electric/80 text-sm mb-4 inline-block">
+            <i class="fas fa-arrow-left mr-2"></i> Back to {{ course.name }}
+        </a>
+        <h1 class="text-3xl font-bold mb-2">Add New Lesson</h1>
+        <p class="text-gray-400">Upload your video and let AI organize everything</p>
+    </div>
+
+    <!-- 3-Step Panel -->
+    <div class="bg-[#0a0e27]/60 backdrop-blur-sm border border-cyan-electric/10 rounded-2xl p-8 shadow-2xl">
+        <form method="POST" id="lesson-form">
+            {% csrf_token %}
+            
+            <!-- STEP 1: Video Input -->
+            <div class="mb-8">
+                <div class="flex items-center gap-3 mb-6">
+                    <div class="w-8 h-8 rounded-full bg-cyan-electric text-[#0a0e27] flex items-center justify-center font-bold">1</div>
+                    <h2 class="text-xl font-bold">Video Input</h2>
+                </div>
+                
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-semibold mb-2 uppercase tracking-wider text-cyan-electric/70">
+                            Paste Vimeo video link
+                        </label>
+                        <input 
+                            type="url" 
+                            name="vimeo_url" 
+                            id="vimeo-url"
+                            placeholder="https://vimeo.com/xxxxxxxxx"
+                            class="w-full bg-[#0a0e27]/40 border border-cyan-electric/20 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-cyan-electric/50"
+                            required
+                        >
+                        <p class="text-xs text-gray-400 mt-2">
+                            We'll automatically detect metadata, duration, and thumbnail.
+                        </p>
+                    </div>
+                    
+                    <!-- Video Preview (hidden initially) -->
+                    <div id="video-preview" class="hidden mt-4 p-4 bg-cyan-electric/5 border border-cyan-electric/20 rounded-lg">
+                        <div class="flex gap-4">
+                            <img id="preview-thumbnail" src="" alt="Video thumbnail" class="w-32 h-20 object-cover rounded">
+                            <div class="flex-1">
+                                <div id="preview-title" class="font-semibold mb-2"></div>
+                                <div class="text-sm text-gray-400">
+                                    <i class="fas fa-clock mr-2"></i>
+                                    <span id="preview-duration"></span>
+                                </div>
+                                <div class="mt-2 text-sm text-green-400">
+                                    <i class="fas fa-check-circle mr-2"></i>
+                                    Video successfully recognized. Ready for lesson generation.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- STEP 2: Lesson Context -->
+            <div class="mb-8 border-t border-cyan-electric/10 pt-8">
+                <div class="flex items-center gap-3 mb-6">
+                    <div class="w-8 h-8 rounded-full bg-cyan-electric text-[#0a0e27] flex items-center justify-center font-bold">2</div>
+                    <h2 class="text-xl font-bold">Lesson Context</h2>
+                </div>
+                
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-semibold mb-2">
+                            Working Lesson Title
+                        </label>
+                        <input 
+                            type="text" 
+                            name="working_title" 
+                            placeholder="Sprint 8.0 – Session 1: Orientation"
+                            class="w-full bg-[#0a0e27]/40 border border-cyan-electric/20 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-cyan-electric/50"
+                            required
+                        >
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-semibold mb-2">
+                            Optional: Notes or rough outline for AI
+                        </label>
+                        <textarea 
+                            name="rough_notes" 
+                            rows="6"
+                            placeholder="Drop session notes, bullets, workshop outline, or even messy copy here. The AI will use this to generate better descriptions and outcomes."
+                            class="w-full bg-[#0a0e27]/40 border border-cyan-electric/20 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-cyan-electric/50 resize-none"
+                        ></textarea>
+                        <p class="text-xs text-gray-400 mt-2">
+                            If you don't add anything, the AI still handles the description based on the video title — but notes improve accuracy.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- STEP 3: AI Generation Button -->
+            <div class="border-t border-cyan-electric/10 pt-8">
+                <button 
+                    type="submit"
+                    id="generate-btn"
+                    class="w-full px-6 py-4 bg-cyan-electric text-[#0a0e27] rounded-full font-bold text-lg hover:bg-cyan-electric/90 hover:shadow-lg hover:shadow-cyan-electric/50 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                    disabled
+                >
+                    <i class="fas fa-magic mr-2"></i>
+                    Generate Lesson Description & Outputs
+                </button>
+                <p class="text-xs text-gray-400 mt-3 text-center">
+                    The AI will generate: clean title, summary, full description, outcomes, and recommended coach actions.
+                </p>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const vimeoUrlInput = document.getElementById('vimeo-url');
+    const videoPreview = document.getElementById('video-preview');
+    const generateBtn = document.getElementById('generate-btn');
+    
+    let vimeoVerified = false;
+    
+    // Verify Vimeo URL on blur
+    vimeoUrlInput.addEventListener('blur', function() {
+        const url = this.value.trim();
+        if (!url) {
+            videoPreview.classList.add('hidden');
+            generateBtn.disabled = true;
+            vimeoVerified = false;
+            return;
+        }
+        
+        // Verify URL
+        fetch('{% url "verify_vimeo_url" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            },
+            body: `vimeo_url=${encodeURIComponent(url)}`
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Show preview
+                document.getElementById('preview-thumbnail').src = data.thumbnail;
+                document.getElementById('preview-title').textContent = data.title || 'Video recognized';
+                document.getElementById('preview-duration').textContent = `Video duration: ${data.duration_formatted}`;
+                videoPreview.classList.remove('hidden');
+                generateBtn.disabled = false;
+                vimeoVerified = true;
+            } else {
+                videoPreview.classList.add('hidden');
+                generateBtn.disabled = true;
+                vimeoVerified = false;
+                alert('Could not verify Vimeo URL: ' + (data.error || 'Unknown error'));
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            videoPreview.classList.add('hidden');
+            generateBtn.disabled = true;
+            vimeoVerified = false;
+        });
+    });
+</script>
+{% endblock %}
+

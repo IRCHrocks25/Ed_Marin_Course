@@ -13,7 +13,7 @@ SECRET_KEY = 'django-insecure-7-9br=zyg7m$!ewa^nlsg+&#e+ux^s00ffn2nh13xl-cvuui@u
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['localhost', 'kane-sproject-production.up.railway.app']
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'kane-sproject-production.up.railway.app']
 
 CSRF_TRUSTED_ORIGINS = [
     'http://localhost',
@@ -48,7 +48,7 @@ ROOT_URLCONF = 'myProject.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [BASE_DIR / 'templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -110,6 +110,14 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
 
 STATIC_URL = 'static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+STATICFILES_DIRS = [
+    BASE_DIR / 'static',
+]
+
+# Media files
+MEDIA_URL = 'media/'
+MEDIA_ROOT = BASE_DIR / 'media'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field

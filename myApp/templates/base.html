@@ -1,0 +1,103 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}AI Assisted Academy - Member Hub{% endblock %}</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Google Fonts - Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind Config -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        'navy-dark': '#0a0e27',
+                        'navy-mid': '#1a1f3a',
+                        'cyan-electric': '#00f0ff',
+                        'purple-accent': '#a855f7',
+                    },
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        
+        /* Premium hover effects */
+        @media (hover: hover) {
+            .coach-card-btn:hover {
+                transform: translateY(-1px);
+            }
+        }
+        
+        /* Smooth transitions */
+        * {
+            transition-property: color, background-color, border-color, transform, box-shadow;
+            transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        /* Mobile optimizations */
+        @media (max-width: 1024px) {
+            .lg\:sticky {
+                position: relative;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-[#0a0e27] via-[#1a1f3a] to-[#000000] min-h-screen text-white">
+    <!-- Top Navigation Bar -->
+    <nav class="bg-[#0a0e27]/80 backdrop-blur-sm border-b border-cyan-electric/20 sticky top-0 z-50">
+        <div class="max-w-[1200px] mx-auto px-6 py-4 flex items-center justify-between">
+            <!-- Left: Logo -->
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 rounded-full bg-gradient-to-br from-cyan-electric to-purple-accent flex items-center justify-center">
+                    <i class="fas fa-bolt text-white text-xl"></i>
+                </div>
+                <div>
+                    <div class="text-[10px] uppercase tracking-widest text-cyan-electric/70 font-semibold">AI Assisted Academy</div>
+                    <div class="text-lg font-bold">Member Hub</div>
+                </div>
+            </div>
+            
+            <!-- Right: Navigation Links -->
+            <div class="flex items-center gap-8">
+                <a href="{% url 'home' %}" class="text-sm font-medium hover:text-cyan-electric transition-colors">Home</a>
+                <a href="{% url 'courses' %}" class="text-sm font-medium hover:text-cyan-electric transition-colors">Courses</a>
+                <a href="#" class="text-sm font-medium hover:text-cyan-electric transition-colors">AI Tools</a>
+                <a href="#" class="text-sm font-medium hover:text-cyan-electric transition-colors">Account</a>
+                <button class="px-4 py-2 rounded-full border border-cyan-electric/30 text-sm font-medium hover:bg-cyan-electric/10 hover:border-cyan-electric/50 transition-all">Log Out</button>
+            </div>
+        </div>
+    </nav>
+    
+    <!-- Main Content -->
+    <main class="w-full py-12 overflow-x-hidden">
+        <div class="max-w-[1400px] mx-auto px-6">
+            {% block content %}{% endblock %}
+        </div>
+    </main>
+    
+    <!-- JavaScript -->
+    <script src="{% static 'js/main.js' %}"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>
+

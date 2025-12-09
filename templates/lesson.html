@@ -1,0 +1,336 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ lesson.title }} - {{ course.name }}{% endblock %}
+
+{% block content %}
+<div class="grid grid-cols-12 gap-6 w-full -ml-6">
+    <!-- Left Column: Syllabus / Module Navigation - Stuck to Left Edge -->
+    <div class="col-span-12 lg:col-span-3">
+        <div class="bg-[#0a0e27]/60 backdrop-blur-sm border border-cyan-electric/10 rounded-r-xl rounded-l-none p-6 sticky top-24 border-l-0 h-full min-h-[calc(100vh-8rem)]">
+            <!-- Program Info -->
+            <div class="mb-6">
+                <div class="text-xs uppercase tracking-widest text-cyan-electric/70 font-semibold mb-1">Program</div>
+                <div class="font-bold text-lg mb-3">{{ course.name }}</div>
+                <div class="w-full bg-gray-700/30 rounded-full h-2 mb-2">
+                    <div class="bg-cyan-electric h-2 rounded-full transition-all duration-500" style="width: {{ progress_percentage }}%"></div>
+                </div>
+                <div class="text-xs text-gray-400">{{ progress_percentage }}% Complete</div>
+            </div>
+            
+            <!-- Modules -->
+            <div class="space-y-4">
+                {% for module in course.modules.all %}
+                <div>
+                    <button class="w-full flex items-center justify-between text-left font-semibold text-sm mb-2 hover:text-cyan-electric transition-colors module-toggle" data-module="{{ module.id }}">
+                        <span>{{ module.name }}</span>
+                        <i class="fas fa-chevron-down text-xs text-gray-500 transition-transform"></i>
+                    </button>
+                    <div class="module-content pl-4 space-y-2" data-module="{{ module.id }}">
+                        {% for module_lesson in module.lessons.all %}
+                        <a href="{% url 'lesson_detail' course.slug module_lesson.slug %}" class="flex items-center gap-3 py-2 px-3 rounded-lg transition-all
+                            {% if module_lesson.id == lesson.id %}bg-cyan-electric/20 border-l-2 border-cyan-electric{% else %}hover:bg-cyan-electric/5{% endif %}">
+                            <div class="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold
+                                {% if module_lesson.id == lesson.id %}bg-cyan-electric text-[#0a0e27]{% else %}bg-gray-700 text-gray-400{% endif %}">
+                                {{ forloop.counter }}
+                            </div>
+                            <span class="flex-1 text-sm {% if module_lesson.id == lesson.id %}font-semibold text-cyan-electric{% else %}text-gray-300{% endif %}">
+                                {{ module_lesson.title }}
+                            </span>
+                            {% if module_lesson.id in completed_lessons %}
+                            <i class="fas fa-check-circle text-green-400"></i>
+                            {% endif %}
+                        </a>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Center Column: Video & Lesson Info -->
+    <div class="col-span-12 lg:col-span-6">
+        <!-- Video Container -->
+        <div class="bg-[#0a0e27]/60 backdrop-blur-sm border border-cyan-electric/10 rounded-xl p-6 mb-6 shadow-2xl">
+            <!-- Lesson Title -->
+            <h1 class="text-3xl font-bold mb-6">{{ lesson.title }}</h1>
+            
+            <!-- Video Player -->
+            <div class="relative rounded-lg overflow-hidden mb-4 bg-black" style="padding:56.25% 0 0 0;position:relative;">
+                {% if lesson.google_drive_url %}
+                    <iframe 
+                        src="{{ lesson.google_drive_url }}" 
+                        frameborder="0" 
+                        allow="autoplay; fullscreen"
+                        style="position:absolute;top:0;left:0;width:100%;height:100%;"
+                        title="{{ lesson.title }}"
+                        allowfullscreen
+                    ></iframe>
+                {% elif lesson.vimeo_id %}
+                    <iframe 
+                        src="https://player.vimeo.com/video/{{ lesson.vimeo_id }}?badge=0&autopause=0&player_id=0&app_id=58479" 
+                        frameborder="0" 
+                        allow="autoplay; fullscreen; picture-in-picture; clipboard-write; encrypted-media; web-share" 
+                        referrerpolicy="strict-origin-when-cross-origin"
+                        style="position:absolute;top:0;left:0;width:100%;height:100%;"
+                        title="{{ lesson.title }}"
+                        allowfullscreen
+                    ></iframe>
+                    <script src="https://player.vimeo.com/api/player.js"></script>
+                {% elif lesson.video_url %}
+                    <iframe src="{{ lesson.video_url }}" class="w-full aspect-video" frameborder="0" allowfullscreen></iframe>
+                {% else %}
+                    <div class="w-full aspect-video bg-gradient-to-br from-cyan-electric/20 to-purple-accent/20 flex items-center justify-center">
+                        <i class="fas fa-video text-6xl text-cyan-electric/50"></i>
+                    </div>
+                {% endif %}
+                <div class="absolute top-3 left-3">
+                    <span class="bg-cyan-electric/90 text-[#0a0e27] text-[10px] uppercase tracking-wider px-2 py-1 rounded font-bold">
+                        {{ lesson.get_lesson_type_display }}
+                    </span>
+                </div>
+            </div>
+            
+            <!-- Video Info Chips -->
+            <div class="flex flex-wrap gap-3 mb-6">
+                <span class="px-3 py-1 bg-cyan-electric/10 border border-cyan-electric/20 rounded-full text-xs flex items-center gap-2">
+                    <i class="fas fa-clock text-cyan-electric"></i>
+                    {{ lesson.get_formatted_duration }}
+                </span>
+                {% if lesson.workbook_url %}
+                <a href="{{ lesson.workbook_url }}" class="px-3 py-1 bg-cyan-electric/10 border border-cyan-electric/20 rounded-full text-xs flex items-center gap-2 hover:bg-cyan-electric/20 transition-colors">
+                    <i class="fas fa-file text-cyan-electric"></i>
+                    Download Workbook
+                </a>
+                {% endif %}
+                {% if lesson.resources_url %}
+                <a href="{{ lesson.resources_url }}" class="px-3 py-1 bg-cyan-electric/10 border border-cyan-electric/20 rounded-full text-xs flex items-center gap-2 hover:bg-cyan-electric/20 transition-colors">
+                    <i class="fas fa-folder text-cyan-electric"></i>
+                    View Resources
+                </a>
+                {% endif %}
+            </div>
+            
+            <!-- Lesson Content Sections -->
+            <div class="space-y-6">
+                <!-- What You'll Learn Today -->
+                <section class="bg-[#0a0e27]/60 backdrop-blur-sm border border-cyan-electric/10 rounded-xl p-6">
+                    <h3 class="text-xl font-bold text-white mb-4">What You'll Learn Today</h3>
+                    <p class="text-gray-300 leading-relaxed">
+                        {{ lesson.description|default:"Learn the fundamentals of live streaming and how to engage your audience in real-time." }}
+                    </p>
+                </section>
+                
+                <!-- This Lesson Will Produce -->
+                {% if lesson.get_outcomes_list %}
+                <section class="bg-[#0a0e27]/60 backdrop-blur-sm border border-cyan-electric/10 rounded-xl p-6">
+                    <h3 class="text-xl font-bold text-white mb-6">This Lesson Will Produce</h3>
+                    <ul class="space-y-4">
+                        {% for outcome in lesson.get_outcomes_list %}
+                        <li class="flex items-start gap-4">
+                            <div class="flex-shrink-0 w-6 h-6 rounded-full bg-cyan-electric/20 border border-cyan-electric/40 flex items-center justify-center mt-0.5">
+                                <i class="fas fa-check text-cyan-electric text-xs"></i>
+                            </div>
+                            <span class="text-gray-300 leading-relaxed flex-1">{{ outcome }}</span>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </section>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Right Column: AI Lesson Coach -->
+    <div class="col-span-12 lg:col-span-3">
+        <div class="bg-[#0a0e27]/60 backdrop-blur-sm border border-cyan-electric/10 rounded-xl p-6 sticky top-24">
+            <!-- Coach Header -->
+            <div class="mb-6">
+                <div class="flex items-center gap-3 mb-3">
+                    <div class="w-10 h-10 rounded-full bg-gradient-to-br from-cyan-electric to-purple-accent flex items-center justify-center">
+                        <i class="fas fa-robot text-white"></i>
+                    </div>
+                    <div class="flex-1">
+                        <div class="text-xs uppercase tracking-widest text-cyan-electric/70 font-semibold">AI Lesson Coach</div>
+                        <div class="font-bold text-sm">{{ course.coach_name }}</div>
+                    </div>
+                    <a href="#" class="text-xs text-cyan-electric/70 hover:text-cyan-electric">How it works</a>
+                </div>
+                <p class="text-xs text-gray-400 leading-relaxed">
+                    This coach is wired only to this program and your lesson history. Ask for clarity, assets, or a challenge.
+                </p>
+            </div>
+            
+            <!-- Mode Selector -->
+            <div class="flex gap-2 mb-6 bg-[#0a0e27]/40 p-1 rounded-lg">
+                <button class="coach-mode-btn flex-1 px-3 py-2 rounded-lg text-xs font-semibold transition-all bg-cyan-electric text-[#0a0e27]" data-mode="clarify">
+                    Clarify
+                </button>
+                <button class="coach-mode-btn flex-1 px-3 py-2 rounded-lg text-xs font-semibold transition-all text-gray-400" data-mode="create">
+                    Create Assets
+                </button>
+                <button class="coach-mode-btn flex-1 px-3 py-2 rounded-lg text-xs font-semibold transition-all text-gray-400" data-mode="practice">
+                    Practice
+                </button>
+            </div>
+            
+            <!-- Mode Content -->
+            <div id="coach-content" class="space-y-4">
+                <!-- Clarify Mode (Default) -->
+                <div id="mode-clarify" class="coach-mode-content">
+                    <div class="space-y-3">
+                        <button class="coach-card-btn w-full text-left p-4 bg-[#0a0e27]/40 border border-cyan-electric/20 rounded-lg hover:bg-cyan-electric/10 hover:border-cyan-electric/40 transition-all" data-action="bullet-summary">
+                            <div class="font-semibold mb-1">Give me the 5-bullet version.</div>
+                            <div class="text-xs text-gray-400">Ultra-tight summary of this session so I know exactly what matters.</div>
+                        </button>
+                        <button class="coach-card-btn w-full text-left p-4 bg-[#0a0e27]/40 border border-cyan-electric/20 rounded-lg hover:bg-cyan-electric/10 hover:border-cyan-electric/40 transition-all" data-action="delegate-instructions">
+                            <div class="font-semibold mb-1">Explain it like I'm delegating this.</div>
+                            <div class="text-xs text-gray-400">Turn the lesson into instructions I can hand to a team member.</div>
+                        </button>
+                        <button class="coach-card-btn w-full text-left p-4 bg-[#0a0e27]/40 border border-cyan-electric/20 rounded-lg hover:bg-cyan-electric/10 hover:border-cyan-electric/40 transition-all" data-action="action-plan">
+                            <div class="font-semibold mb-1">Turn this into a 3-step action plan.</div>
+                            <div class="text-xs text-gray-400">Concrete moves to implement this week.</div>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Create Assets Mode -->
+                <div id="mode-create" class="coach-mode-content hidden">
+                    <div class="space-y-3">
+                        <button class="coach-card-btn w-full text-left p-4 bg-[#0a0e27]/40 border border-cyan-electric/20 rounded-lg hover:bg-cyan-electric/10 hover:border-cyan-electric/40 transition-all" data-action="promo-emails">
+                            <div class="font-semibold mb-1">Draft 3 promotional emails for this sprint.</div>
+                            <div class="text-xs text-gray-400">Generate email templates based on this session's content.</div>
+                        </button>
+                        <button class="coach-card-btn w-full text-left p-4 bg-[#0a0e27]/40 border border-cyan-electric/20 rounded-lg hover:bg-cyan-electric/10 hover:border-cyan-electric/40 transition-all" data-action="webinar-outline">
+                            <div class="font-semibold mb-1">Write a webinar outline based on this session.</div>
+                            <div class="text-xs text-gray-400">Structure a complete webinar from this lesson.</div>
+                        </button>
+                        <button class="coach-card-btn w-full text-left p-4 bg-[#0a0e27]/40 border border-cyan-electric/20 rounded-lg hover:bg-cyan-electric/10 hover:border-cyan-electric/40 transition-all" data-action="social-posts">
+                            <div class="font-semibold mb-1">Generate 5 social posts from this content.</div>
+                            <div class="text-xs text-gray-400">Create ready-to-post social media content.</div>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Practice Mode -->
+                <div id="mode-practice" class="coach-mode-content hidden">
+                    <div class="space-y-3">
+                        <button class="coach-card-btn w-full text-left p-4 bg-[#0a0e27]/40 border border-cyan-electric/20 rounded-lg hover:bg-cyan-electric/10 hover:border-cyan-electric/40 transition-all" data-action="quiz-questions">
+                            <div class="font-semibold mb-1">Give me 5 quiz questions from this session.</div>
+                            <div class="text-xs text-gray-400">Test your understanding with targeted questions.</div>
+                        </button>
+                        <button class="coach-card-btn w-full text-left p-4 bg-[#0a0e27]/40 border border-cyan-electric/20 rounded-lg hover:bg-cyan-electric/10 hover:border-cyan-electric/40 transition-all" data-action="check-understanding">
+                            <div class="font-semibold mb-1">Check my understanding.</div>
+                            <div class="text-xs text-gray-400">Submit your summary and get feedback.</div>
+                        </button>
+                        <button class="coach-card-btn w-full text-left p-4 bg-[#0a0e27]/40 border border-cyan-electric/20 rounded-lg hover:bg-cyan-electric/10 hover:border-cyan-electric/40 transition-all" data-action="role-play">
+                            <div class="font-semibold mb-1">Role-play: you're the client, I'm pitching this.</div>
+                            <div class="text-xs text-gray-400">Practice your pitch with the AI coach.</div>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- AI Response Area -->
+            <div id="ai-response" class="hidden mt-6 p-4 bg-cyan-electric/5 border border-cyan-electric/20 rounded-lg">
+                <div class="flex items-center justify-between mb-3">
+                    <div class="font-semibold text-sm" id="response-title"></div>
+                    <div class="flex gap-2">
+                        <button class="text-xs text-cyan-electric/70 hover:text-cyan-electric" id="copy-response">
+                            <i class="fas fa-copy"></i> Copy
+                        </button>
+                        <button class="text-xs text-cyan-electric/70 hover:text-cyan-electric" id="save-response">
+                            <i class="fas fa-save"></i> Save
+                        </button>
+                    </div>
+                </div>
+                <div id="response-content" class="text-sm text-gray-300"></div>
+            </div>
+            
+            <!-- Free-form Question -->
+            <div class="mt-6 pt-6 border-t border-cyan-electric/10">
+                <label class="block text-xs uppercase tracking-widest text-cyan-electric/70 font-semibold mb-2">
+                    Got an edge-case?
+                </label>
+                <textarea id="free-form-question" rows="3" placeholder="Ask the Sprint Coach about this lesson, your funnel, or your offer." class="w-full bg-[#0a0e27]/40 border border-cyan-electric/20 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-cyan-electric/50 resize-none"></textarea>
+                <div class="flex items-center justify-between mt-2">
+                    <div class="text-xs text-gray-500 flex items-center gap-1">
+                        <i class="fas fa-shield-alt"></i>
+                        Private to your account
+                    </div>
+                    <button id="submit-question" class="px-4 py-2 bg-cyan-electric text-[#0a0e27] rounded-full text-xs font-semibold hover:bg-cyan-electric/90 transition-all">
+                        Ask Coach
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Exam / Gating Info -->
+            <div class="mt-6 pt-6 border-t border-cyan-electric/10">
+                <div class="text-xs text-gray-400 leading-relaxed">
+                    {% if enrollment and enrollment.payment_type == 'installment' %}
+                        Final exam unlocks in {{ enrollment.days_until_exam }} days. Complete sessions and use the coach to prep.
+                    {% else %}
+                        Final exam is available. The coach can drill you on exam-style questions.
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Module toggle
+    document.querySelectorAll('.module-toggle').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const moduleId = this.dataset.module;
+            const content = document.querySelector(`.module-content[data-module="${moduleId}"]`);
+            const icon = this.querySelector('i');
+            content.classList.toggle('hidden');
+            icon.classList.toggle('rotate-180');
+        });
+    });
+    
+    // Coach mode switching
+    document.querySelectorAll('.coach-mode-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const mode = this.dataset.mode;
+            
+            // Update button states
+            document.querySelectorAll('.coach-mode-btn').forEach(b => {
+                b.classList.remove('bg-cyan-electric', 'text-[#0a0e27]');
+                b.classList.add('text-gray-400');
+            });
+            this.classList.add('bg-cyan-electric', 'text-[#0a0e27]');
+            this.classList.remove('text-gray-400');
+            
+            // Show/hide mode content
+            document.querySelectorAll('.coach-mode-content').forEach(content => {
+                content.classList.add('hidden');
+            });
+            document.getElementById(`mode-${mode}`).classList.remove('hidden');
+        });
+    });
+    
+    // Coach card actions
+    document.querySelectorAll('.coach-card-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const action = this.dataset.action;
+            // TODO: Implement API call to backend
+            console.log('Action:', action);
+        });
+    });
+    
+    // Free-form question submission
+    document.getElementById('submit-question')?.addEventListener('click', function() {
+        const question = document.getElementById('free-form-question').value;
+        if (question.trim()) {
+            // TODO: Implement API call to backend
+            console.log('Question:', question);
+        }
+    });
+</script>
+{% endblock %}
+

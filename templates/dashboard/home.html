@@ -1,0 +1,132 @@
+{% extends 'dashboard/base.html' %}
+
+{% block title %}Dashboard Overview{% endblock %}
+{% block page_title %}Dashboard Overview{% endblock %}
+
+{% block content %}
+<!-- Stats Cards -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+    <div class="bg-[#0a0e27]/60 backdrop-blur-sm border border-cyan-electric/10 rounded-xl p-6">
+        <div class="flex items-center justify-between mb-4">
+            <div class="w-12 h-12 rounded-lg bg-cyan-electric/20 flex items-center justify-center">
+                <i class="fas fa-book text-cyan-electric text-xl"></i>
+            </div>
+        </div>
+        <div class="text-3xl font-bold mb-1">{{ total_courses }}</div>
+        <div class="text-sm text-gray-400">Total Courses</div>
+    </div>
+    
+    <div class="bg-[#0a0e27]/60 backdrop-blur-sm border border-cyan-electric/10 rounded-xl p-6">
+        <div class="flex items-center justify-between mb-4">
+            <div class="w-12 h-12 rounded-lg bg-purple-accent/20 flex items-center justify-center">
+                <i class="fas fa-video text-purple-accent text-xl"></i>
+            </div>
+        </div>
+        <div class="text-3xl font-bold mb-1">{{ total_lessons }}</div>
+        <div class="text-sm text-gray-400">Total Lessons</div>
+    </div>
+    
+    <div class="bg-[#0a0e27]/60 backdrop-blur-sm border border-cyan-electric/10 rounded-xl p-6">
+        <div class="flex items-center justify-between mb-4">
+            <div class="w-12 h-12 rounded-lg bg-green-500/20 flex items-center justify-center">
+                <i class="fas fa-check-circle text-green-400 text-xl"></i>
+            </div>
+        </div>
+        <div class="text-3xl font-bold mb-1">{{ approved_lessons }}</div>
+        <div class="text-sm text-gray-400">Approved Lessons</div>
+    </div>
+    
+    <div class="bg-[#0a0e27]/60 backdrop-blur-sm border border-cyan-electric/10 rounded-xl p-6">
+        <div class="flex items-center justify-between mb-4">
+            <div class="w-12 h-12 rounded-lg bg-yellow-500/20 flex items-center justify-center">
+                <i class="fas fa-clock text-yellow-400 text-xl"></i>
+            </div>
+        </div>
+        <div class="text-3xl font-bold mb-1">{{ pending_lessons }}</div>
+        <div class="text-sm text-gray-400">Pending Lessons</div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+    <div class="bg-[#0a0e27]/60 backdrop-blur-sm border border-cyan-electric/10 rounded-xl p-6">
+        <h2 class="text-xl font-bold mb-4">Quick Actions</h2>
+        <div class="space-y-3">
+            <a href="{% url 'dashboard_add_course' %}" class="flex items-center justify-between p-4 bg-cyan-electric/10 border border-cyan-electric/20 rounded-lg hover:bg-cyan-electric/20 transition-all group">
+                <div class="flex items-center gap-3">
+                    <i class="fas fa-plus-circle text-cyan-electric text-xl"></i>
+                    <span class="font-semibold">Create New Course</span>
+                </div>
+                <i class="fas fa-arrow-right text-cyan-electric/50 group-hover:translate-x-1 transition-transform"></i>
+            </a>
+            <a href="{% url 'dashboard_add_lesson' %}" class="flex items-center justify-between p-4 bg-purple-accent/10 border border-purple-accent/20 rounded-lg hover:bg-purple-accent/20 transition-all group">
+                <div class="flex items-center gap-3">
+                    <i class="fas fa-video text-purple-accent text-xl"></i>
+                    <span class="font-semibold">Add New Lesson</span>
+                </div>
+                <i class="fas fa-arrow-right text-purple-accent/50 group-hover:translate-x-1 transition-transform"></i>
+            </a>
+        </div>
+    </div>
+    
+    <div class="bg-[#0a0e27]/60 backdrop-blur-sm border border-cyan-electric/10 rounded-xl p-6">
+        <h2 class="text-xl font-bold mb-4">Recent Activity</h2>
+        <div class="space-y-3">
+            {% for lesson in recent_lessons|slice:":5" %}
+            <div class="flex items-center gap-3 p-3 bg-[#0a0e27]/40 rounded-lg">
+                <div class="w-10 h-10 rounded-lg bg-cyan-electric/20 flex items-center justify-center">
+                    <i class="fas fa-video text-cyan-electric"></i>
+                </div>
+                <div class="flex-1">
+                    <div class="font-semibold text-sm">{{ lesson.title }}</div>
+                    <div class="text-xs text-gray-400">{{ lesson.course.name }}</div>
+                </div>
+                <span class="px-2 py-1 rounded text-xs
+                    {% if lesson.ai_generation_status == 'approved' %}bg-green-500/20 text-green-400
+                    {% elif lesson.ai_generation_status == 'generated' %}bg-yellow-500/20 text-yellow-400
+                    {% else %}bg-gray-500/20 text-gray-400{% endif %}">
+                    {{ lesson.get_ai_generation_status_display }}
+                </span>
+            </div>
+            {% empty %}
+            <p class="text-gray-400 text-sm">No recent activity</p>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- Courses Overview -->
+<div class="bg-[#0a0e27]/60 backdrop-blur-sm border border-cyan-electric/10 rounded-xl p-6">
+    <div class="flex items-center justify-between mb-6">
+        <h2 class="text-xl font-bold">Your Courses</h2>
+        <a href="{% url 'dashboard_courses' %}" class="text-cyan-electric hover:text-cyan-electric/80 text-sm font-medium">
+            View All <i class="fas fa-arrow-right ml-1"></i>
+        </a>
+    </div>
+    
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {% for course in courses|slice:":6" %}
+        <div class="bg-[#0a0e27]/40 border border-cyan-electric/10 rounded-lg p-4 hover:border-cyan-electric/30 transition-all">
+            <h3 class="font-bold mb-2">{{ course.name }}</h3>
+            <div class="flex items-center justify-between text-sm text-gray-400 mb-3">
+                <span><i class="fas fa-video mr-1"></i> {{ course.get_lesson_count }} lessons</span>
+                <span class="px-2 py-1 rounded text-xs
+                    {% if course.status == 'active' %}bg-green-500/20 text-green-400
+                    {% else %}bg-gray-500/20 text-gray-400{% endif %}">
+                    {{ course.get_status_display }}
+                </span>
+            </div>
+            <a href="{% url 'dashboard_course_detail' course.slug %}" class="text-cyan-electric hover:text-cyan-electric/80 text-sm font-medium">
+                Manage <i class="fas fa-arrow-right ml-1"></i>
+            </a>
+        </div>
+        {% empty %}
+        <div class="col-span-full text-center py-8">
+            <i class="fas fa-book-open text-4xl text-gray-600 mb-3"></i>
+            <p class="text-gray-400">No courses yet. Create your first course!</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
+

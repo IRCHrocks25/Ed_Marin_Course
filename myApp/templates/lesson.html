@@ -1,0 +1,352 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ lesson.title }} - {{ course.name }}{% endblock %}
+
+{% block content %}
+<!-- Premium Full-Width Layout -->
+<div class="w-full min-h-screen bg-[#0a0e27]">
+    <!-- Main App Container - Full Width Canvas -->
+    <div class="w-full py-8 lg:py-10">
+        <!-- Three-Column Grid - Integrated Layout - Full Width Edge-to-Edge -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-0 lg:gap-1 xl:gap-2 2xl:gap-3 items-start w-full">
+            
+            <!-- Left Column: Program Navigation Rail - Stuck to Left Edge -->
+            <aside class="lg:col-span-2 xl:col-span-2 2xl:col-span-2 order-2 lg:order-1">
+                <div class="bg-[#0f1529]/80 backdrop-blur-sm rounded-r-2xl rounded-l-none p-7 lg:p-8 lg:sticky lg:top-24 border border-cyan-electric/5 border-l-0 shadow-[0_8px_32px_rgba(0,240,255,0.05)] h-full min-h-[calc(100vh-8rem)]">
+                    <!-- Program Header -->
+                    <div class="mb-8 lg:mb-10 pb-6 lg:pb-8 border-b border-cyan-electric/10">
+                        <div class="text-[10px] uppercase tracking-[0.15em] text-cyan-electric/60 font-semibold mb-3">Program</div>
+                        <h2 class="text-2xl font-bold text-white mb-5 leading-tight line-clamp-2">{{ course.name }}</h2>
+                        <div class="space-y-2">
+                            <div class="w-full bg-gray-800/40 rounded-full h-2.5 overflow-hidden">
+                                <div class="bg-gradient-to-r from-cyan-electric to-purple-accent h-full rounded-full transition-all duration-700 ease-out" style="width: {{ progress_percentage }}%"></div>
+                            </div>
+                            <div class="text-xs text-gray-400 font-medium">{{ progress_percentage }}% Complete</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Session List -->
+                    <nav class="space-y-1.5">
+                        {% for module in course.modules.all %}
+                            {% for module_lesson in module.lessons.all %}
+                                <a href="{% url 'lesson_detail' course.slug module_lesson.slug %}" 
+                                   class="group relative flex items-center gap-4 py-3.5 px-5 rounded-xl transition-all duration-200
+                                   {% if module_lesson.id == lesson.id %}
+                                       bg-gradient-to-l from-cyan-electric/15 to-cyan-electric/5 border-r-4 border-cyan-electric shadow-[0_0_20px_rgba(0,240,255,0.15)]
+                                   {% else %}
+                                       hover:bg-cyan-electric/5 border-r-4 border-transparent
+                                   {% endif %}">
+                                    <!-- Session Number -->
+                                    <div class="flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold transition-all duration-200
+                                        {% if module_lesson.id == lesson.id %}
+                                            bg-cyan-electric text-[#0a0e27] shadow-[0_0_15px_rgba(0,240,255,0.4)]
+                                        {% else %}
+                                            bg-gray-700/50 text-gray-400 group-hover:bg-gray-700 group-hover:text-gray-300
+                                        {% endif %}">
+                                        {{ forloop.counter }}
+                                    </div>
+                                    <!-- Session Title -->
+                                    <span class="flex-1 text-sm leading-snug
+                                        {% if module_lesson.id == lesson.id %} font-semibold text-cyan-electric
+                                        {% else %} text-gray-300 group-hover:text-white
+                                        {% endif %}">
+                                        {{ module_lesson.title }}
+                                    </span>
+                                    <!-- Completion Check -->
+                                    {% if module_lesson.id in completed_lessons %}
+                                        <i class="fas fa-check-circle text-green-400 text-sm flex-shrink-0"></i>
+                                    {% endif %}
+                                </a>
+                            {% endfor %}
+                        {% endfor %}
+                    </nav>
+                </div>
+            </aside>
+            
+            <!-- Center Column: Main Content Area -->
+            <main class="lg:col-span-7 xl:col-span-8 2xl:col-span-8 order-1 lg:order-2 px-2 sm:px-3 lg:px-4 xl:px-5 2xl:px-6">
+                <!-- Lesson Header - Aligned with Left Rail -->
+                <div class="mb-6 lg:mb-8">
+                    <h1 class="text-3xl sm:text-4xl xl:text-5xl font-bold text-white mb-3 leading-tight tracking-tight">
+                        {{ lesson.title }}
+                    </h1>
+                    <div class="h-1 w-16 bg-gradient-to-r from-cyan-electric to-transparent rounded-full"></div>
+                </div>
+                
+                <!-- Video Player - Premium Treatment -->
+                <div class="mb-9 lg:mb-10">
+                    <div class="relative rounded-2xl overflow-hidden bg-black shadow-[0_20px_60px_rgba(0,0,0,0.5),inset_0_0_100px_rgba(0,240,255,0.05)] border border-cyan-electric/10" 
+                         style="padding:56.25% 0 0 0;position:relative;">
+                        {% if lesson.google_drive_url %}
+                            <iframe 
+                                src="{{ lesson.google_drive_url }}" 
+                                frameborder="0" 
+                                allow="autoplay; fullscreen"
+                                style="position:absolute;top:0;left:0;width:100%;height:100%;"
+                                title="{{ lesson.title }}"
+                                allowfullscreen
+                                class="rounded-2xl"
+                            ></iframe>
+                        {% elif lesson.vimeo_id %}
+                            <iframe 
+                                src="https://player.vimeo.com/video/{{ lesson.vimeo_id }}?badge=0&autopause=0&player_id=0&app_id=58479" 
+                                frameborder="0" 
+                                allow="autoplay; fullscreen; picture-in-picture; clipboard-write; encrypted-media; web-share" 
+                                referrerpolicy="strict-origin-when-cross-origin"
+                                style="position:absolute;top:0;left:0;width:100%;height:100%;"
+                                title="{{ lesson.title }}"
+                                allowfullscreen
+                                class="rounded-2xl"
+                            ></iframe>
+                            <script src="https://player.vimeo.com/api/player.js"></script>
+                        {% elif lesson.video_url %}
+                            <iframe src="{{ lesson.video_url }}" class="w-full aspect-video rounded-2xl" frameborder="0" allowfullscreen></iframe>
+                        {% else %}
+                            <div class="w-full aspect-video bg-gradient-to-br from-cyan-electric/10 to-purple-accent/10 flex flex-col items-center justify-center p-12">
+                                <i class="fas fa-video text-7xl text-cyan-electric/30 mb-6"></i>
+                                <p class="text-cyan-electric/60 text-center text-base max-w-md leading-relaxed">
+                                    Video not available. Please contact support or check back later.
+                                </p>
+                            </div>
+                        {% endif %}
+                        <!-- Lesson Type Badge -->
+                        <div class="absolute top-4 left-4">
+                            <span class="bg-cyan-electric/95 text-[#0a0e27] text-[10px] uppercase tracking-wider px-3 py-1.5 rounded-lg font-bold shadow-lg">
+                                {{ lesson.get_lesson_type_display }}
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <!-- Video Meta Chips -->
+                    <div class="flex flex-wrap gap-3 mt-6">
+                        <span class="px-4 py-2 bg-cyan-electric/10 border border-cyan-electric/20 rounded-full text-sm flex items-center gap-2.5 font-medium">
+                            <i class="fas fa-clock text-cyan-electric text-xs"></i>
+                            <span class="text-gray-300">{{ lesson.get_formatted_duration }}</span>
+                        </span>
+                        {% if lesson.workbook_url %}
+                        <a href="{{ lesson.workbook_url }}" class="px-4 py-2 bg-cyan-electric/10 border border-cyan-electric/20 rounded-full text-sm flex items-center gap-2.5 font-medium hover:bg-cyan-electric/20 hover:border-cyan-electric/40 transition-all">
+                            <i class="fas fa-file text-cyan-electric text-xs"></i>
+                            <span class="text-gray-300">Download Workbook</span>
+                        </a>
+                        {% endif %}
+                        {% if lesson.resources_url %}
+                        <a href="{{ lesson.resources_url }}" class="px-4 py-2 bg-cyan-electric/10 border border-cyan-electric/20 rounded-full text-sm flex items-center gap-2.5 font-medium hover:bg-cyan-electric/20 hover:border-cyan-electric/40 transition-all">
+                            <i class="fas fa-folder text-cyan-electric text-xs"></i>
+                            <span class="text-gray-300">View Resources</span>
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Lesson Content Sections -->
+                <div class="space-y-8 lg:space-y-10">
+                    <!-- What You'll Learn Today -->
+                    <section class="bg-[#0f1529]/40 backdrop-blur-sm rounded-2xl p-7 lg:p-8 border border-cyan-electric/5">
+                        <h3 class="text-xl font-bold text-white mb-4">What You'll Learn Today</h3>
+                        <p class="text-gray-300 leading-relaxed text-base">
+                            {{ lesson.description|default:"Learn the fundamentals of live streaming and how to engage your audience in real-time." }}
+                        </p>
+                    </section>
+                    
+                    <!-- This Lesson Will Produce -->
+                    {% if lesson.get_outcomes_list %}
+                    <section class="bg-[#0f1529]/40 backdrop-blur-sm rounded-2xl p-7 lg:p-8 border border-cyan-electric/5">
+                        <h3 class="text-xl font-bold text-white mb-6">This Lesson Will Produce</h3>
+                        <ul class="space-y-4">
+                            {% for outcome in lesson.get_outcomes_list %}
+                            <li class="flex items-start gap-4 group">
+                                <div class="flex-shrink-0 w-6 h-6 rounded-full bg-cyan-electric/20 border border-cyan-electric/40 flex items-center justify-center mt-0.5 group-hover:bg-cyan-electric/30 transition-colors">
+                                    <i class="fas fa-check text-cyan-electric text-xs"></i>
+                                </div>
+                                <span class="text-gray-300 leading-relaxed flex-1 pt-0.5">{{ outcome }}</span>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </section>
+                    {% endif %}
+                </div>
+            </aside>
+            
+            <!-- Right Column: AI Lesson Coach Rail -->
+            <aside class="lg:col-span-3 xl:col-span-2 2xl:col-span-2 order-3 lg:order-3 px-2 sm:px-3 lg:px-4 xl:px-5 2xl:px-6 pr-2 sm:pr-3 lg:pr-4 xl:pr-5 2xl:pr-6">
+                <div class="bg-[#0f1529]/80 backdrop-blur-sm rounded-2xl p-7 lg:p-8 lg:sticky lg:top-24 border border-cyan-electric/5 shadow-[0_8px_32px_rgba(0,240,255,0.05)]">
+                    <!-- Coach Profile Card -->
+                    <div class="mb-8 pb-7 border-b border-cyan-electric/10">
+                        <div class="flex items-start gap-4 mb-4">
+                            <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-cyan-electric to-purple-accent flex items-center justify-center shadow-lg flex-shrink-0">
+                                <i class="fas fa-robot text-white text-lg"></i>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <div class="text-[10px] uppercase tracking-[0.15em] text-cyan-electric/60 font-semibold mb-1">AI Lesson Coach</div>
+                                <div class="font-bold text-base text-white leading-tight truncate">{{ course.coach_name }}</div>
+                            </div>
+                            <a href="#" class="text-xs text-cyan-electric/60 hover:text-cyan-electric transition-colors flex-shrink-0">How it works</a>
+                        </div>
+                        <p class="text-xs text-gray-400 leading-relaxed">
+                            This coach is wired only to this program and your lesson history. Ask for clarity, assets, or a challenge.
+                        </p>
+                    </div>
+                    
+                    <!-- Mode Selector Tabs -->
+                    <div class="flex gap-2 mb-8 bg-[#0a0e27]/60 p-1.5 rounded-xl border border-cyan-electric/10">
+                        <button class="coach-mode-btn flex-1 px-4 py-2.5 rounded-lg text-xs font-semibold transition-all duration-200 bg-cyan-electric text-[#0a0e27] shadow-md" data-mode="clarify">
+                            Clarify
+                        </button>
+                        <button class="coach-mode-btn flex-1 px-4 py-2.5 rounded-lg text-xs font-semibold transition-all duration-200 text-gray-400 hover:text-white" data-mode="create">
+                            Create Assets
+                        </button>
+                        <button class="coach-mode-btn flex-1 px-4 py-2.5 rounded-lg text-xs font-semibold transition-all duration-200 text-gray-400 hover:text-white" data-mode="practice">
+                            Practice
+                        </button>
+                    </div>
+                    
+                    <!-- Mode Content -->
+                    <div id="coach-content" class="space-y-4">
+                        <!-- Clarify Mode (Default) -->
+                        <div id="mode-clarify" class="coach-mode-content">
+                            <div class="space-y-3">
+                                <button class="coach-card-btn w-full text-left p-5 bg-[#0a0e27]/60 border border-cyan-electric/20 rounded-xl hover:bg-cyan-electric/10 hover:border-cyan-electric/40 hover:shadow-[0_0_20px_rgba(0,240,255,0.1)] transition-all duration-200 group" data-action="bullet-summary">
+                                    <div class="font-semibold text-sm text-white mb-2 group-hover:text-cyan-electric transition-colors">Give me the 5-bullet version.</div>
+                                    <div class="text-xs text-gray-400 leading-relaxed">Ultra-tight summary of this session so I know exactly what matters.</div>
+                                </button>
+                                <button class="coach-card-btn w-full text-left p-5 bg-[#0a0e27]/60 border border-cyan-electric/20 rounded-xl hover:bg-cyan-electric/10 hover:border-cyan-electric/40 hover:shadow-[0_0_20px_rgba(0,240,255,0.1)] transition-all duration-200 group" data-action="delegate-instructions">
+                                    <div class="font-semibold text-sm text-white mb-2 group-hover:text-cyan-electric transition-colors">Explain it like I'm delegating this.</div>
+                                    <div class="text-xs text-gray-400 leading-relaxed">Turn the lesson into instructions I can hand to a team member.</div>
+                                </button>
+                                <button class="coach-card-btn w-full text-left p-5 bg-[#0a0e27]/60 border border-cyan-electric/20 rounded-xl hover:bg-cyan-electric/10 hover:border-cyan-electric/40 hover:shadow-[0_0_20px_rgba(0,240,255,0.1)] transition-all duration-200 group" data-action="action-plan">
+                                    <div class="font-semibold text-sm text-white mb-2 group-hover:text-cyan-electric transition-colors">Turn this into a 3-step action plan.</div>
+                                    <div class="text-xs text-gray-400 leading-relaxed">Concrete moves to implement this week.</div>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Create Assets Mode -->
+                        <div id="mode-create" class="coach-mode-content hidden">
+                            <div class="space-y-3">
+                                <button class="coach-card-btn w-full text-left p-5 bg-[#0a0e27]/60 border border-cyan-electric/20 rounded-xl hover:bg-cyan-electric/10 hover:border-cyan-electric/40 hover:shadow-[0_0_20px_rgba(0,240,255,0.1)] transition-all duration-200 group" data-action="promo-emails">
+                                    <div class="font-semibold text-sm text-white mb-2 group-hover:text-cyan-electric transition-colors">Draft 3 promotional emails for this sprint.</div>
+                                    <div class="text-xs text-gray-400 leading-relaxed">Generate email templates based on this session's content.</div>
+                                </button>
+                                <button class="coach-card-btn w-full text-left p-5 bg-[#0a0e27]/60 border border-cyan-electric/20 rounded-xl hover:bg-cyan-electric/10 hover:border-cyan-electric/40 hover:shadow-[0_0_20px_rgba(0,240,255,0.1)] transition-all duration-200 group" data-action="webinar-outline">
+                                    <div class="font-semibold text-sm text-white mb-2 group-hover:text-cyan-electric transition-colors">Write a webinar outline based on this session.</div>
+                                    <div class="text-xs text-gray-400 leading-relaxed">Structure a complete webinar from this lesson.</div>
+                                </button>
+                                <button class="coach-card-btn w-full text-left p-5 bg-[#0a0e27]/60 border border-cyan-electric/20 rounded-xl hover:bg-cyan-electric/10 hover:border-cyan-electric/40 hover:shadow-[0_0_20px_rgba(0,240,255,0.1)] transition-all duration-200 group" data-action="social-posts">
+                                    <div class="font-semibold text-sm text-white mb-2 group-hover:text-cyan-electric transition-colors">Generate 5 social posts from this content.</div>
+                                    <div class="text-xs text-gray-400 leading-relaxed">Create ready-to-post social media content.</div>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Practice Mode -->
+                        <div id="mode-practice" class="coach-mode-content hidden">
+                            <div class="space-y-3">
+                                <button class="coach-card-btn w-full text-left p-5 bg-[#0a0e27]/60 border border-cyan-electric/20 rounded-xl hover:bg-cyan-electric/10 hover:border-cyan-electric/40 hover:shadow-[0_0_20px_rgba(0,240,255,0.1)] transition-all duration-200 group" data-action="quiz-questions">
+                                    <div class="font-semibold text-sm text-white mb-2 group-hover:text-cyan-electric transition-colors">Give me 5 quiz questions from this session.</div>
+                                    <div class="text-xs text-gray-400 leading-relaxed">Test your understanding with targeted questions.</div>
+                                </button>
+                                <button class="coach-card-btn w-full text-left p-5 bg-[#0a0e27]/60 border border-cyan-electric/20 rounded-xl hover:bg-cyan-electric/10 hover:border-cyan-electric/40 hover:shadow-[0_0_20px_rgba(0,240,255,0.1)] transition-all duration-200 group" data-action="check-understanding">
+                                    <div class="font-semibold text-sm text-white mb-2 group-hover:text-cyan-electric transition-colors">Check my understanding.</div>
+                                    <div class="text-xs text-gray-400 leading-relaxed">Submit your summary and get feedback.</div>
+                                </button>
+                                <button class="coach-card-btn w-full text-left p-5 bg-[#0a0e27]/60 border border-cyan-electric/20 rounded-xl hover:bg-cyan-electric/10 hover:border-cyan-electric/40 hover:shadow-[0_0_20px_rgba(0,240,255,0.1)] transition-all duration-200 group" data-action="role-play">
+                                    <div class="font-semibold text-sm text-white mb-2 group-hover:text-cyan-electric transition-colors">Role-play: you're the client, I'm pitching this.</div>
+                                    <div class="text-xs text-gray-400 leading-relaxed">Practice your pitch with the AI coach.</div>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- AI Response Area -->
+                    <div id="ai-response" class="hidden mt-8 p-6 bg-cyan-electric/5 border border-cyan-electric/20 rounded-xl">
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="font-semibold text-sm text-white" id="response-title"></div>
+                            <div class="flex gap-3">
+                                <button class="text-xs text-cyan-electric/70 hover:text-cyan-electric transition-colors" id="copy-response">
+                                    <i class="fas fa-copy"></i> Copy
+                                </button>
+                                <button class="text-xs text-cyan-electric/70 hover:text-cyan-electric transition-colors" id="save-response">
+                                    <i class="fas fa-save"></i> Save
+                                </button>
+                            </div>
+                        </div>
+                        <div id="response-content" class="text-sm text-gray-300 leading-relaxed"></div>
+                    </div>
+                    
+                    <!-- Free-form Question -->
+                    <div class="mt-10 pt-8 border-t border-cyan-electric/10">
+                        <label class="block text-[10px] uppercase tracking-[0.15em] text-cyan-electric/60 font-semibold mb-3">
+                            Got an edge-case?
+                        </label>
+                        <textarea id="free-form-question" rows="3" placeholder="Ask the Sprint Coach about this lesson, your funnel, or your offer." class="w-full bg-[#0a0e27]/60 border border-cyan-electric/20 rounded-xl px-4 py-3 text-sm text-gray-300 placeholder-gray-500 focus:outline-none focus:border-cyan-electric/50 focus:bg-[#0a0e27]/80 transition-all resize-none"></textarea>
+                        <div class="flex items-center justify-between mt-3">
+                            <div class="text-xs text-gray-500 flex items-center gap-2">
+                                <i class="fas fa-shield-alt"></i>
+                                <span>Private to your account</span>
+                            </div>
+                            <button id="submit-question" class="px-5 py-2.5 bg-cyan-electric text-[#0a0e27] rounded-full text-xs font-semibold hover:bg-cyan-electric/90 hover:shadow-lg hover:shadow-cyan-electric/30 transition-all">
+                                Ask Coach
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Exam / Gating Info -->
+                    <div class="mt-8 pt-8 border-t border-cyan-electric/10">
+                        <div class="text-xs text-gray-400 leading-relaxed">
+                            {% if enrollment and enrollment.payment_type == 'installment' %}
+                                Final exam unlocks in {{ enrollment.days_until_exam }} days. Complete sessions and use the coach to prep.
+                            {% else %}
+                                Final exam is available. The coach can drill you on exam-style questions.
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </aside>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Coach mode switching
+    document.querySelectorAll('.coach-mode-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const mode = this.dataset.mode;
+            
+            // Update button states
+            document.querySelectorAll('.coach-mode-btn').forEach(b => {
+                b.classList.remove('bg-cyan-electric', 'text-[#0a0e27]', 'shadow-md');
+                b.classList.add('text-gray-400');
+            });
+            this.classList.add('bg-cyan-electric', 'text-[#0a0e27]', 'shadow-md');
+            this.classList.remove('text-gray-400');
+            
+            // Show/hide mode content
+            document.querySelectorAll('.coach-mode-content').forEach(content => {
+                content.classList.add('hidden');
+            });
+            document.getElementById(`mode-${mode}`).classList.remove('hidden');
+        });
+    });
+    
+    // Coach card actions
+    document.querySelectorAll('.coach-card-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const action = this.dataset.action;
+            // TODO: Implement API call to backend
+            console.log('Action:', action);
+        });
+    });
+    
+    // Free-form question submission
+    document.getElementById('submit-question')?.addEventListener('click', function() {
+        const question = document.getElementById('free-form-question').value;
+        if (question.trim()) {
+            // TODO: Implement API call to backend
+            console.log('Question:', question);
+        }
+    });
+</script>
+{% endblock %}
