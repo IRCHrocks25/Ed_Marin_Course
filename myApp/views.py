@@ -713,7 +713,7 @@ def complete_lesson(request, lesson_id):
 def chatbot_webhook(request):
     """Forward chatbot messages to the appropriate webhook based on lesson"""
     # Default webhook URL
-    DEFAULT_WEBHOOK_URL = "https://kane-course-website.fly.dev/webhook/258fb5ce-b70f-48a7-b8b6-f6b0449ddbeb"
+    DEFAULT_WEBHOOK_URL = "https://kane-course-website.fly.dev/webhook/12e91cca-0e58-4769-9f11-68399ec2f970"
     
     # Lesson-specific webhook URLs
     LESSON_WEBHOOKS = {
@@ -769,14 +769,24 @@ def chatbot_webhook(request):
         try:
             upstream_payload = response.json()
         except ValueError:
-            upstream_payload = {'message': response.text}
+            upstream_payload = response.text
 
-        payload = {
-            # Upstream body, under the exact key name your integration expects
-            'Response': upstream_payload,
-            'status_code': response.status_code,
-        }
-        return JsonResponse(payload, status=200)
+        # Extract a clean text message for the frontend chat UI.
+        message_text = None
+        if isinstance(upstream_payload, dict):
+            # Many of your test webhooks wrap like: {"Response": {"output": "..."}}.
+            inner = upstream_payload.get('Response', upstream_payload)
+            if isinstance(inner, dict):
+                message_text = (
+                    inner.get('output')
+                    or inner.get('message')
+                    or inner.get('response')
+                )
+        if not message_text:
+            message_text = str(upstream_payload)
+
+        # Frontend expects `data.response` to be the text to display.
+        return JsonResponse({'response': message_text}, status=200)
     except json.JSONDecodeError:
         return JsonResponse({'error': 'Invalid JSON'}, status=400)
     except requests.RequestException as e:

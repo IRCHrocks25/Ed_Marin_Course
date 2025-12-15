@@ -226,7 +226,7 @@ By the end of this session, you'll have actionable insights and a clear path to 
                 lesson.order = lesson_data['order']
                 lesson.save()
                 self.stdout.write(self.style.WARNING(f'  ↻ Updated lesson: {lesson.title} with video URL'))
-        
+
         self.stdout.write(self.style.SUCCESS('\n✅ Database seeding completed!'))
         self.stdout.write(self.style.SUCCESS(f'\n📊 Summary:'))
         self.stdout.write(self.style.SUCCESS(f'   - Course: {course.name}'))

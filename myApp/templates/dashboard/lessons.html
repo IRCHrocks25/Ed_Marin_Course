@@ -69,9 +69,12 @@
                     {{ lesson.get_ai_generation_status_display }}
                 </span>
             </div>
-            <div class="ml-4">
-                <a href="{% url 'dashboard_edit_lesson' lesson.id %}" class="px-4 py-2 bg-cyan-electric/10 border border-cyan-electric/30 rounded-lg font-medium hover:bg-cyan-electric/20 transition-all">
+            <div class="ml-4 flex flex-col gap-2 items-end">
+                <a href="{% url 'dashboard_edit_lesson' lesson.id %}" class="px-4 py-2 bg-cyan-electric/10 border border-cyan-electric/30 rounded-lg font-medium hover:bg-cyan-electric/20 transition-all text-sm">
                     Edit
+                </a>
+                <a href="{% url 'dashboard_lesson_quiz' lesson.id %}" class="px-4 py-2 bg-purple-accent/10 border border-purple-accent/30 rounded-lg font-medium hover:bg-purple-accent/20 transition-all text-xs text-purple-accent">
+                    Manage Quiz
                 </a>
             </div>
         </div>

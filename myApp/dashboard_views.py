@@ -7,7 +7,20 @@ from django.db.models import Count, Q
 import json
 import re
 import requests
-from .models import Course, Lesson, Module, UserProgress, CourseEnrollment, Exam, ExamAttempt, Certification
+from .models import (
+    Course,
+    Lesson,
+    Module,
+    UserProgress,
+    CourseEnrollment,
+    Exam,
+    ExamAttempt,
+    Certification,
+    LessonQuiz,
+    LessonQuizQuestion,
+)
+from django.contrib import messages
+from django.db import models
 from django.contrib.auth.models import User
 from django.db.models import Avg, Count, Q, Sum
 from django.utils import timezone
@@ -276,6 +289,67 @@ def dashboard_course_detail(request, course_slug):
     
     return render(request, 'dashboard/course_detail.html', {
         'course': course,
+    })
+
+
+@staff_member_required
+def dashboard_lesson_quiz(request, lesson_id):
+    """Create and manage a simple quiz for a lesson."""
+    lesson = get_object_or_404(Lesson, id=lesson_id)
+    quiz, created = LessonQuiz.objects.get_or_create(
+        lesson=lesson,
+        defaults={
+            'title': f'{lesson.title} Quiz',
+            'passing_score': 80,
+        },
+    )
+
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        if action == 'save_quiz':
+            quiz.title = request.POST.get('title') or quiz.title
+            quiz.description = request.POST.get('description', '')
+            try:
+                quiz.passing_score = float(
+                    request.POST.get('passing_score') or quiz.passing_score
+                )
+            except ValueError:
+                pass
+            quiz.is_required = bool(request.POST.get('is_required'))
+            quiz.save()
+            messages.success(request, 'Quiz settings updated.')
+        elif action == 'add_question':
+            text = request.POST.get('q_text', '').strip()
+            if text:
+                order = (
+                    quiz.questions.aggregate(models.Max('order'))['order__max'] or 0
+                ) + 1
+                LessonQuizQuestion.objects.create(
+                    quiz=quiz,
+                    text=text,
+                    option_a=request.POST.get('q_option_a', '').strip(),
+                    option_b=request.POST.get('q_option_b', '').strip(),
+                    option_c=request.POST.get('q_option_c', '').strip(),
+                    option_d=request.POST.get('q_option_d', '').strip(),
+                    correct_option=request.POST.get('q_correct_option', 'A') or 'A',
+                    order=order,
+                )
+                messages.success(request, 'Question added.')
+            else:
+                messages.error(request, 'Question text is required.')
+        elif action == 'delete_question':
+            q_id = request.POST.get('question_id')
+            if q_id:
+                LessonQuizQuestion.objects.filter(id=q_id, quiz=quiz).delete()
+                messages.success(request, 'Question deleted.')
+
+        return redirect('dashboard_lesson_quiz', lesson_id=lesson.id)
+
+    questions = LessonQuizQuestion.objects.filter(quiz=quiz).order_by('order', 'id')
+    return render(request, 'dashboard/lesson_quiz.html', {
+        'lesson': lesson,
+        'quiz': quiz,
+        'questions': questions,
     })
 
 
