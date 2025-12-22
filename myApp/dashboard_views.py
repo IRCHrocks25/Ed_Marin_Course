@@ -47,7 +47,10 @@ from django.utils import timezone
 
 @staff_member_required
 def dashboard_home(request):
-    """Main dashboard overview"""
+    """Main dashboard overview with analytics"""
+    from datetime import timedelta
+    
+    # Basic stats
     total_courses = Course.objects.count()
     total_lessons = Lesson.objects.count()
     approved_lessons = Lesson.objects.filter(ai_generation_status='approved').count()
@@ -55,8 +58,87 @@ def dashboard_home(request):
     recent_lessons = Lesson.objects.select_related('course').order_by('-created_at')[:10]
     courses = Course.objects.annotate(lesson_count=Count('lessons')).order_by('-created_at')
     
+    # Student Analytics
+    total_students = User.objects.filter(is_staff=False, is_superuser=False).count()
+    active_students = User.objects.filter(
+        is_staff=False, 
+        is_superuser=False,
+        last_login__gte=timezone.now() - timedelta(days=30)
+    ).count()
+    new_students_30d = User.objects.filter(
+        is_staff=False,
+        is_superuser=False,
+        date_joined__gte=timezone.now() - timedelta(days=30)
+    ).count()
+    
+    # Enrollment Analytics
+    total_enrollments = CourseEnrollment.objects.count()
+    active_enrollments = CourseEnrollment.objects.filter(
+        enrolled_at__gte=timezone.now() - timedelta(days=30)
+    ).count()
+    
+    # Course Access Analytics
+    total_accesses = CourseAccess.objects.filter(status='unlocked').count()
+    expired_accesses = CourseAccess.objects.filter(status='expired').count()
+    
+    # Progress Analytics
+    total_progress = UserProgress.objects.count()
+    completed_lessons = UserProgress.objects.filter(completed=True).count()
+    completion_rate = (completed_lessons / total_progress * 100) if total_progress > 0 else 0
+    
+    # Certification Analytics
+    total_certifications = Certification.objects.count()
+    certifications_30d = Certification.objects.filter(
+        issued_at__gte=timezone.now() - timedelta(days=30)
+    ).count() if Certification.objects.filter(issued_at__isnull=False).exists() else 0
+    
+    # Course Performance Analytics
+    course_performance = []
+    for course in Course.objects.all()[:10]:
+        enrollments = CourseEnrollment.objects.filter(course=course).count()
+        accesses = CourseAccess.objects.filter(course=course, status='unlocked').count()
+        total_students_course = enrollments + accesses
+        
+        total_lessons_course = course.lessons.count()
+        completed = UserProgress.objects.filter(
+            lesson__course=course,
+            completed=True
+        ).count()
+        course_completion_rate = (completed / (total_lessons_course * total_students_course * 100)) if total_students_course > 0 and total_lessons_course > 0 else 0
+        
+        certifications_course = Certification.objects.filter(course=course, status='passed').count()
+        
+        course_performance.append({
+            'course': course,
+            'total_students': total_students_course,
+            'completion_rate': min(course_completion_rate * 100, 100),
+            'certifications': certifications_course,
+            'lessons': total_lessons_course,
+        })
+    
+    # Recent Activity (last 7 days)
+    seven_days_ago = timezone.now() - timedelta(days=7)
+    recent_progress = UserProgress.objects.filter(
+        updated_at__gte=seven_days_ago
+    ).count()
+    recent_certifications = Certification.objects.filter(
+        issued_at__gte=seven_days_ago
+    ).count() if Certification.objects.filter(issued_at__isnull=False).exists() else 0
+    
     # Get student activity feed
     student_activities = get_student_activity_feed(limit=10)
+    
+    # Enrollment trend (last 30 days)
+    enrollment_trend = []
+    for i in range(30, 0, -1):
+        date = timezone.now() - timedelta(days=i)
+        count = CourseEnrollment.objects.filter(
+            enrolled_at__date=date.date()
+        ).count()
+        enrollment_trend.append({
+            'date': date.strftime('%m/%d'),
+            'count': count
+        })
     
     return render(request, 'dashboard/home.html', {
         'total_courses': total_courses,
@@ -66,6 +148,23 @@ def dashboard_home(request):
         'recent_lessons': recent_lessons,
         'courses': courses,
         'student_activities': student_activities,
+        # Analytics data
+        'total_students': total_students,
+        'active_students': active_students,
+        'new_students_30d': new_students_30d,
+        'total_enrollments': total_enrollments,
+        'active_enrollments': active_enrollments,
+        'total_accesses': total_accesses,
+        'expired_accesses': expired_accesses,
+        'total_progress': total_progress,
+        'completed_lessons': completed_lessons,
+        'completion_rate': round(completion_rate, 1),
+        'total_certifications': total_certifications,
+        'certifications_30d': certifications_30d,
+        'course_performance': course_performance,
+        'recent_progress': recent_progress,
+        'recent_certifications': recent_certifications,
+        'enrollment_trend': enrollment_trend,
     })
 
 
@@ -1351,6 +1450,329 @@ def bulk_grant_access_view(request):
         'success': True,
         'message': f'Granted {granted_count} access records',
         'granted_count': granted_count
+    })
+
+
+@staff_member_required
+def dashboard_analytics(request):
+    """Comprehensive analytics dashboard"""
+    from datetime import timedelta
+    
+    # Date ranges
+    now = timezone.now()
+    last_7_days = now - timedelta(days=7)
+    last_30_days = now - timedelta(days=30)
+    last_90_days = now - timedelta(days=90)
+    
+    # Student Analytics
+    total_students = User.objects.filter(is_staff=False, is_superuser=False).count()
+    active_students = User.objects.filter(
+        is_staff=False, is_superuser=False,
+        last_login__gte=last_30_days
+    ).count()
+    new_students_7d = User.objects.filter(
+        is_staff=False, is_superuser=False,
+        date_joined__gte=last_7_days
+    ).count()
+    new_students_30d = User.objects.filter(
+        is_staff=False, is_superuser=False,
+        date_joined__gte=last_30_days
+    ).count()
+    inactive_students = User.objects.filter(
+        is_staff=False, is_superuser=False,
+        last_login__lt=last_90_days
+    ).count()
+    
+    # Enrollment Analytics
+    total_enrollments = CourseEnrollment.objects.count()
+    enrollments_7d = CourseEnrollment.objects.filter(enrolled_at__gte=last_7_days).count()
+    enrollments_30d = CourseEnrollment.objects.filter(enrolled_at__gte=last_30_days).count()
+    
+    # Access Analytics
+    total_accesses = CourseAccess.objects.filter(status='unlocked').count()
+    expired_accesses = CourseAccess.objects.filter(status='expired').count()
+    pending_accesses = CourseAccess.objects.filter(status='pending').count()
+    
+    # Progress Analytics
+    total_progress = UserProgress.objects.count()
+    completed_lessons = UserProgress.objects.filter(completed=True).count()
+    progress_7d = UserProgress.objects.filter(updated_at__gte=last_7_days).count()
+    completion_rate = (completed_lessons / total_progress * 100) if total_progress > 0 else 0
+    
+    # Certification Analytics
+    total_certifications = Certification.objects.count()
+    certifications_7d = Certification.objects.filter(
+        issued_at__gte=last_7_days
+    ).count() if Certification.objects.filter(issued_at__isnull=False).exists() else 0
+    certifications_30d = Certification.objects.filter(
+        issued_at__gte=last_30_days
+    ).count() if Certification.objects.filter(issued_at__isnull=False).exists() else 0
+    
+    # Course Performance Detailed
+    course_performance_detailed = []
+    for course in Course.objects.all():
+        enrollments = CourseEnrollment.objects.filter(course=course).count()
+        accesses = CourseAccess.objects.filter(course=course, status='unlocked').count()
+        total_students_course = enrollments + accesses
+        
+        total_lessons_course = course.lessons.count()
+        completed = UserProgress.objects.filter(
+            lesson__course=course,
+            completed=True
+        ).count()
+        total_possible = total_lessons_course * total_students_course
+        course_completion_rate = (completed / total_possible * 100) if total_possible > 0 else 0
+        
+        certifications_course = Certification.objects.filter(course=course, status='passed').count()
+        
+        # Recent activity
+        recent_enrollments = CourseEnrollment.objects.filter(
+            course=course,
+            enrolled_at__gte=last_7_days
+        ).count()
+        
+        course_performance_detailed.append({
+            'course': course,
+            'total_students': total_students_course,
+            'completion_rate': min(course_completion_rate, 100),
+            'certifications': certifications_course,
+            'lessons': total_lessons_course,
+            'recent_enrollments': recent_enrollments,
+            'completed_lessons': completed,
+        })
+    
+    # Sort by total students
+    course_performance_detailed.sort(key=lambda x: x['total_students'], reverse=True)
+    
+    # Enrollment trend (last 30 days)
+    enrollment_trend = []
+    for i in range(30, 0, -1):
+        date = now - timedelta(days=i)
+        count = CourseEnrollment.objects.filter(
+            enrolled_at__date=date.date()
+        ).count()
+        enrollment_trend.append({
+            'date': date.strftime('%m/%d'),
+            'count': count
+        })
+    
+    # Certification trend (last 30 days)
+    certification_trend = []
+    if Certification.objects.filter(issued_at__isnull=False).exists():
+        for i in range(30, 0, -1):
+            date = now - timedelta(days=i)
+            count = Certification.objects.filter(
+                issued_at__date=date.date()
+            ).count()
+            certification_trend.append({
+                'date': date.strftime('%m/%d'),
+                'count': count
+            })
+    
+    # Top performing courses
+    top_courses = sorted(course_performance_detailed, key=lambda x: x['total_students'], reverse=True)[:5]
+    
+    # Most active students
+    active_students_list = User.objects.filter(
+        is_staff=False, is_superuser=False
+    ).annotate(
+        progress_count=Count('userprogress', filter=Q(userprogress__updated_at__gte=last_7_days))
+    ).filter(progress_count__gt=0).order_by('-progress_count')[:10]
+    
+    # Additional Phase 1 Analytics
+    
+    # Students with zero progress
+    students_with_progress = UserProgress.objects.values_list('user_id', flat=True).distinct()
+    students_zero_progress = User.objects.filter(
+        is_staff=False, is_superuser=False
+    ).exclude(id__in=students_with_progress).count()
+    
+    # Students who completed at least one course
+    students_with_completions = UserProgress.objects.filter(
+        completed=True
+    ).values_list('user_id', flat=True).distinct().count()
+    
+    # Average lessons completed per student
+    total_lessons_completed = UserProgress.objects.filter(completed=True).count()
+    avg_lessons_per_student = round(total_lessons_completed / total_students, 1) if total_students > 0 else 0
+    
+    # Course completion rates by course type
+    course_type_stats = {}
+    for course_type, _ in Course.COURSE_TYPES:
+        courses_of_type = Course.objects.filter(course_type=course_type)
+        total_enrollments_type = CourseEnrollment.objects.filter(course__in=courses_of_type).count()
+        total_accesses_type = CourseAccess.objects.filter(course__in=courses_of_type, status='unlocked').count()
+        total_students_type = total_enrollments_type + total_accesses_type
+        
+        total_lessons_type = sum(c.lessons.count() for c in courses_of_type)
+        completed_lessons_type = UserProgress.objects.filter(
+            lesson__course__in=courses_of_type,
+            completed=True
+        ).count()
+        completion_rate_type = (completed_lessons_type / (total_lessons_type * total_students_type * 100)) if total_students_type > 0 and total_lessons_type > 0 else 0
+        
+        course_type_stats[course_type] = {
+            'total_courses': courses_of_type.count(),
+            'total_students': total_students_type,
+            'completion_rate': min(completion_rate_type * 100, 100),
+        }
+    
+    # Certification rate (certifications / eligible students)
+    students_with_all_lessons = []
+    for course in Course.objects.all():
+        total_lessons = course.lessons.count()
+        if total_lessons > 0:
+            enrollments = CourseEnrollment.objects.filter(course=course)
+            accesses = CourseAccess.objects.filter(course=course, status='unlocked')
+            for enrollment in enrollments:
+                completed = UserProgress.objects.filter(
+                    user=enrollment.user,
+                    lesson__course=course,
+                    completed=True
+                ).count()
+                if completed >= total_lessons:
+                    students_with_all_lessons.append((enrollment.user.id, course.id))
+            for access in accesses:
+                completed = UserProgress.objects.filter(
+                    user=access.user,
+                    lesson__course=course,
+                    completed=True
+                ).count()
+                if completed >= total_lessons:
+                    students_with_all_lessons.append((access.user.id, course.id))
+    
+    eligible_students_count = len(set(students_with_all_lessons))
+    certification_rate = (total_certifications / eligible_students_count * 100) if eligible_students_count > 0 else 0
+    
+    # Trophy distribution
+    trophy_distribution = {
+        'bronze': 0,  # 1 certification
+        'silver': 0,  # 3 certifications
+        'gold': 0,    # 5 certifications
+        'platinum': 0, # 8 certifications
+        'diamond': 0,  # 12 certifications
+        'ultimate': 0  # 20 certifications
+    }
+    for user in User.objects.filter(is_staff=False, is_superuser=False):
+        cert_count = Certification.objects.filter(user=user, status='passed').count()
+        if cert_count >= 20:
+            trophy_distribution['ultimate'] += 1
+        elif cert_count >= 12:
+            trophy_distribution['diamond'] += 1
+        elif cert_count >= 8:
+            trophy_distribution['platinum'] += 1
+        elif cert_count >= 5:
+            trophy_distribution['gold'] += 1
+        elif cert_count >= 3:
+            trophy_distribution['silver'] += 1
+        elif cert_count >= 1:
+            trophy_distribution['bronze'] += 1
+    
+    # Exam & Quiz Analytics
+    total_exam_attempts = ExamAttempt.objects.count()
+    passed_exams = ExamAttempt.objects.filter(passed=True).count()
+    exam_pass_rate = (passed_exams / total_exam_attempts * 100) if total_exam_attempts > 0 else 0
+    avg_exam_score = ExamAttempt.objects.aggregate(Avg('score'))['score__avg'] or 0
+    
+    total_quiz_attempts = LessonQuizAttempt.objects.count()
+    passed_quizzes = LessonQuizAttempt.objects.filter(passed=True).count()
+    quiz_pass_rate = (passed_quizzes / total_quiz_attempts * 100) if total_quiz_attempts > 0 else 0
+    avg_quiz_score = LessonQuizAttempt.objects.aggregate(Avg('score'))['score__avg'] or 0
+    
+    # Access Source Analytics
+    access_by_method = {
+        'enrollment': CourseEnrollment.objects.count(),
+        'course_access': CourseAccess.objects.filter(status='unlocked').count(),
+        'bundle': BundlePurchase.objects.count(),
+        'cohort': CohortMember.objects.count(),
+    }
+    
+    # Drop-off analysis (students who started but didn't complete)
+    students_who_started = set()
+    students_who_completed = set()
+    for course in Course.objects.all():
+        enrollments = CourseEnrollment.objects.filter(course=course)
+        accesses = CourseAccess.objects.filter(course=course, status='unlocked')
+        total_lessons = course.lessons.count()
+        
+        for enrollment in enrollments:
+            students_who_started.add(enrollment.user.id)
+            completed = UserProgress.objects.filter(
+                user=enrollment.user,
+                lesson__course=course,
+                completed=True
+            ).count()
+            if completed >= total_lessons and total_lessons > 0:
+                students_who_completed.add(enrollment.user.id)
+        
+        for access in accesses:
+            students_who_started.add(access.user.id)
+            completed = UserProgress.objects.filter(
+                user=access.user,
+                lesson__course=course,
+                completed=True
+            ).count()
+            if completed >= total_lessons and total_lessons > 0:
+                students_who_completed.add(access.user.id)
+    
+    drop_off_count = len(students_who_started) - len(students_who_completed)
+    drop_off_rate = (drop_off_count / len(students_who_started) * 100) if len(students_who_started) > 0 else 0
+    
+    return render(request, 'dashboard/analytics.html', {
+        # Student metrics
+        'total_students': total_students,
+        'active_students': active_students,
+        'new_students_7d': new_students_7d,
+        'new_students_30d': new_students_30d,
+        'inactive_students': inactive_students,
+        
+        # Enrollment metrics
+        'total_enrollments': total_enrollments,
+        'enrollments_7d': enrollments_7d,
+        'enrollments_30d': enrollments_30d,
+        
+        # Access metrics
+        'total_accesses': total_accesses,
+        'expired_accesses': expired_accesses,
+        'pending_accesses': pending_accesses,
+        
+        # Progress metrics
+        'total_progress': total_progress,
+        'completed_lessons': completed_lessons,
+        'progress_7d': progress_7d,
+        'completion_rate': round(completion_rate, 1),
+        
+        # Certification metrics
+        'total_certifications': total_certifications,
+        'certifications_7d': certifications_7d,
+        'certifications_30d': certifications_30d,
+        
+        # Detailed data
+        'course_performance': course_performance_detailed,
+        'enrollment_trend': enrollment_trend,
+        'certification_trend': certification_trend,
+        'top_courses': top_courses,
+        'active_students_list': active_students_list,
+        
+        # Additional Phase 1 Analytics
+        'students_zero_progress': students_zero_progress,
+        'students_with_completions': students_with_completions,
+        'avg_lessons_per_student': avg_lessons_per_student,
+        'course_type_stats': course_type_stats,
+        'certification_rate': round(certification_rate, 1),
+        'trophy_distribution': trophy_distribution,
+        'total_exam_attempts': total_exam_attempts,
+        'passed_exams': passed_exams,
+        'exam_pass_rate': round(exam_pass_rate, 1),
+        'avg_exam_score': round(avg_exam_score, 1),
+        'total_quiz_attempts': total_quiz_attempts,
+        'passed_quizzes': passed_quizzes,
+        'quiz_pass_rate': round(quiz_pass_rate, 1),
+        'avg_quiz_score': round(avg_quiz_score, 1),
+        'access_by_method': access_by_method,
+        'drop_off_count': drop_off_count,
+        'drop_off_rate': round(drop_off_rate, 1),
+        'eligible_students_count': eligible_students_count,
     })
 
 

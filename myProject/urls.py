@@ -22,6 +22,7 @@ urlpatterns = [
     
     # Dashboard URLs (Admin-facing, for developers)
     path('dashboard/', dashboard_views.dashboard_home, name='dashboard_home'),
+    path('dashboard/analytics/', dashboard_views.dashboard_analytics, name='dashboard_analytics'),
     path('dashboard/courses/', dashboard_views.dashboard_courses, name='dashboard_courses'),
     path('dashboard/courses/add/', dashboard_views.dashboard_add_course, name='dashboard_add_course'),
     path('dashboard/courses/<slug:course_slug>/', dashboard_views.dashboard_course_detail, name='dashboard_course_detail'),

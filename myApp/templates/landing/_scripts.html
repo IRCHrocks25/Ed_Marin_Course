@@ -1,14 +1,4 @@
 <script>
-    // Nav scroll effect
-    window.addEventListener('scroll', function() {
-        const nav = document.getElementById('main-nav');
-        if (window.scrollY > 50) {
-            nav.classList.add('nav-scrolled');
-        } else {
-            nav.classList.remove('nav-scrolled');
-        }
-    });
-    
     // Character counter
     const textarea = document.querySelector('textarea[maxlength="350"]');
     const charCount = document.getElementById('char-count');
@@ -219,6 +209,227 @@
                 
                 .hero-content * {
                     text-shadow: 0 0 20px rgba(147, 51, 234, 0.4), 0 0 40px rgba(192, 132, 252, 0.3);
+                }
+            `;
+            document.head.appendChild(style);
+        }
+    })();
+
+    // Modern Landing Page Transitions
+    (function() {
+        // Page Load Transition
+        document.body.style.opacity = '0';
+        window.addEventListener('load', () => {
+            document.body.style.transition = 'opacity 0.6s ease-in';
+            document.body.style.opacity = '1';
+        });
+
+        // Intersection Observer for Scroll Animations
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -100px 0px'
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('section-visible');
+                    observer.unobserve(entry.target);
+                }
+            });
+        }, observerOptions);
+
+        // Observe all sections
+        const sections = document.querySelectorAll('section');
+        sections.forEach((section, index) => {
+            section.classList.add('section-hidden');
+            section.style.transitionDelay = `${index * 0.1}s`;
+            observer.observe(section);
+        });
+
+        // Enhanced Smooth Scroll with Easing
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    const targetPosition = target.getBoundingClientRect().top + window.pageYOffset - 80;
+                    const startPosition = window.pageYOffset;
+                    const distance = targetPosition - startPosition;
+                    const duration = 1000;
+                    let start = null;
+
+                    function easeInOutCubic(t) {
+                        return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+                    }
+
+                    function animation(currentTime) {
+                        if (start === null) start = currentTime;
+                        const timeElapsed = currentTime - start;
+                        const progress = Math.min(timeElapsed / duration, 1);
+                        const ease = easeInOutCubic(progress);
+                        window.scrollTo(0, startPosition + distance * ease);
+                        if (timeElapsed < duration) {
+                            requestAnimationFrame(animation);
+                        }
+                    }
+                    requestAnimationFrame(animation);
+                }
+            });
+        });
+
+        // Parallax Scroll Effect for Sections
+        let ticking = false;
+        function updateParallax() {
+            const scrolled = window.pageYOffset;
+            const parallaxElements = document.querySelectorAll('[data-parallax]');
+            
+            parallaxElements.forEach(element => {
+                const speed = element.dataset.parallax || 0.5;
+                const yPos = -(scrolled * speed);
+                element.style.transform = `translateY(${yPos}px)`;
+            });
+            ticking = false;
+        }
+
+        window.addEventListener('scroll', () => {
+            if (!ticking) {
+                window.requestAnimationFrame(updateParallax);
+                ticking = true;
+            }
+        }, { passive: true });
+
+        // Stagger Animation for Cards
+        const cardObserver = new IntersectionObserver((entries) => {
+            entries.forEach((entry, index) => {
+                if (entry.isIntersecting) {
+                    setTimeout(() => {
+                        entry.target.classList.add('card-visible');
+                    }, index * 100);
+                    cardObserver.unobserve(entry.target);
+                }
+            });
+        }, { threshold: 0.1 });
+
+        document.querySelectorAll('.glass-card, [class*="rounded-3xl"], [class*="rounded-xl"]').forEach(card => {
+            card.classList.add('card-hidden');
+            cardObserver.observe(card);
+        });
+
+        // Add CSS for transitions
+        if (!document.getElementById('landing-transitions')) {
+            const style = document.createElement('style');
+            style.id = 'landing-transitions';
+            style.textContent = `
+                /* Section Transitions */
+                .section-hidden {
+                    opacity: 0;
+                    transform: translateY(50px);
+                    transition: opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1), 
+                                transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+                }
+                
+                .section-visible {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+                
+                /* Card Transitions */
+                .card-hidden {
+                    opacity: 0;
+                    transform: translateY(30px) scale(0.95);
+                    transition: opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1),
+                                transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+                }
+                
+                .card-visible {
+                    opacity: 1;
+                    transform: translateY(0) scale(1);
+                }
+                
+                /* Smooth Scroll Behavior */
+                html {
+                    scroll-behavior: smooth;
+                }
+                
+                /* Fade In Animation for Text */
+                @keyframes fadeInUp {
+                    from {
+                        opacity: 0;
+                        transform: translateY(30px);
+                    }
+                    to {
+                        opacity: 1;
+                        transform: translateY(0);
+                    }
+                }
+                
+                /* Scale In Animation */
+                @keyframes scaleIn {
+                    from {
+                        opacity: 0;
+                        transform: scale(0.9);
+                    }
+                    to {
+                        opacity: 1;
+                        transform: scale(1);
+                    }
+                }
+                
+                /* Slide In from Left */
+                @keyframes slideInLeft {
+                    from {
+                        opacity: 0;
+                        transform: translateX(-50px);
+                    }
+                    to {
+                        opacity: 1;
+                        transform: translateX(0);
+                    }
+                }
+                
+                /* Slide In from Right */
+                @keyframes slideInRight {
+                    from {
+                        opacity: 0;
+                        transform: translateX(50px);
+                    }
+                    to {
+                        opacity: 1;
+                        transform: translateX(0);
+                    }
+                }
+                
+                /* Blur Fade In */
+                @keyframes blurFadeIn {
+                    from {
+                        opacity: 0;
+                        filter: blur(10px);
+                    }
+                    to {
+                        opacity: 1;
+                        filter: blur(0);
+                    }
+                }
+                
+                /* Apply animations to specific elements */
+                h1, h2, h3 {
+                    animation: fadeInUp 0.8s ease-out;
+                }
+                
+                /* Smooth transitions for all interactive elements */
+                a, button {
+                    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                }
+                
+                /* Hover effects with smooth transitions */
+                a:hover, button:hover {
+                    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                }
+                
+                /* Content layer fade in */
+                .content-layer {
+                    animation: fadeInUp 0.6s ease-out;
                 }
             `;
             document.head.appendChild(style);

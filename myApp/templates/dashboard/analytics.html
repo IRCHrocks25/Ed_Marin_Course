@@ -1,0 +1,515 @@
+{% extends 'dashboard/base.html' %}
+
+{% block title %}Analytics Dashboard{% endblock %}
+{% block page_title %}Analytics Dashboard{% endblock %}
+
+{% block content %}
+<!-- Key Metrics Overview -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+    <!-- Total Students -->
+    <div class="bg-[#0a0e27]/60 backdrop-blur-sm border border-cyan-electric/10 rounded-xl p-6">
+        <div class="flex items-center justify-between mb-4">
+            <div class="w-12 h-12 rounded-lg bg-cyan-electric/20 flex items-center justify-center">
+                <i class="fas fa-users text-cyan-electric text-xl"></i>
+            </div>
+            <span class="text-xs px-2 py-1 rounded bg-green-500/20 text-green-400">{{ active_students }} active</span>
+        </div>
+        <div class="text-3xl font-bold mb-1">{{ total_students }}</div>
+        <div class="text-sm text-gray-400">Total Students</div>
+        <div class="text-xs text-gray-500 mt-2">+{{ new_students_30d }} new (30d)</div>
+    </div>
+    
+    <!-- Total Enrollments -->
+    <div class="bg-[#0a0e27]/60 backdrop-blur-sm border border-purple-accent/10 rounded-xl p-6">
+        <div class="flex items-center justify-between mb-4">
+            <div class="w-12 h-12 rounded-lg bg-purple-accent/20 flex items-center justify-center">
+                <i class="fas fa-user-plus text-purple-accent text-xl"></i>
+            </div>
+            <span class="text-xs px-2 py-1 rounded bg-purple-accent/20 text-purple-accent">+{{ enrollments_7d }} (7d)</span>
+        </div>
+        <div class="text-3xl font-bold mb-1">{{ total_enrollments }}</div>
+        <div class="text-sm text-gray-400">Total Enrollments</div>
+        <div class="text-xs text-gray-500 mt-2">{{ enrollments_30d }} this month</div>
+    </div>
+    
+    <!-- Certifications -->
+    <div class="bg-[#0a0e27]/60 backdrop-blur-sm border border-yellow-500/10 rounded-xl p-6">
+        <div class="flex items-center justify-between mb-4">
+            <div class="w-12 h-12 rounded-lg bg-yellow-500/20 flex items-center justify-center">
+                <i class="fas fa-certificate text-yellow-400 text-xl"></i>
+            </div>
+            <span class="text-xs px-2 py-1 rounded bg-yellow-500/20 text-yellow-400">+{{ certifications_7d }} (7d)</span>
+        </div>
+        <div class="text-3xl font-bold mb-1">{{ total_certifications }}</div>
+        <div class="text-sm text-gray-400">Certifications Issued</div>
+        <div class="text-xs text-gray-500 mt-2">{{ certifications_30d }} this month</div>
+    </div>
+    
+    <!-- Completion Rate -->
+    <div class="bg-[#0a0e27]/60 backdrop-blur-sm border border-green-500/10 rounded-xl p-6">
+        <div class="flex items-center justify-between mb-4">
+            <div class="w-12 h-12 rounded-lg bg-green-500/20 flex items-center justify-center">
+                <i class="fas fa-chart-line text-green-400 text-xl"></i>
+            </div>
+        </div>
+        <div class="text-3xl font-bold mb-1">{{ completion_rate }}%</div>
+        <div class="text-sm text-gray-400">Completion Rate</div>
+        <div class="text-xs text-gray-500 mt-2">{{ completed_lessons }}/{{ total_progress }} completed</div>
+    </div>
+</div>
+
+<!-- Secondary Metrics -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+    <div class="bg-[#0a0e27]/60 backdrop-blur-sm border border-cyan-electric/10 rounded-xl p-6">
+        <div class="text-2xl font-bold mb-1">{{ new_students_7d }}</div>
+        <div class="text-sm text-gray-400">New Students (7d)</div>
+    </div>
+    
+    <div class="bg-[#0a0e27]/60 backdrop-blur-sm border border-cyan-electric/10 rounded-xl p-6">
+        <div class="text-2xl font-bold mb-1">{{ inactive_students }}</div>
+        <div class="text-sm text-gray-400">Inactive Students (90d+)</div>
+    </div>
+    
+    <div class="bg-[#0a0e27]/60 backdrop-blur-sm border border-cyan-electric/10 rounded-xl p-6">
+        <div class="text-2xl font-bold mb-1">{{ total_accesses }}</div>
+        <div class="text-sm text-gray-400">Active Access Grants</div>
+        <div class="text-xs text-gray-500 mt-1">{{ expired_accesses }} expired</div>
+    </div>
+    
+    <div class="bg-[#0a0e27]/60 backdrop-blur-sm border border-cyan-electric/10 rounded-xl p-6">
+        <div class="text-2xl font-bold mb-1">{{ progress_7d }}</div>
+        <div class="text-sm text-gray-400">Progress Updates (7d)</div>
+    </div>
+</div>
+
+<!-- Charts Row -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+    <!-- Enrollment Trend -->
+    <div class="bg-[#0a0e27]/60 backdrop-blur-sm border border-cyan-electric/10 rounded-xl p-6">
+        <h2 class="text-xl font-bold mb-6">Enrollment Trend (Last 30 Days)</h2>
+        <div class="h-64 flex items-end justify-between gap-1">
+            {% for day in enrollment_trend %}
+            <div class="flex-1 flex flex-col items-center group">
+                <div class="w-full bg-gradient-to-t from-cyan-electric to-purple-accent rounded-t transition-all hover:opacity-80 relative"
+                     style="height: {% if day.count > 0 %}{{ day.count|add:5 }}0%{% else %}5%{% endif %}; min-height: 4px;">
+                    <span class="absolute -top-6 left-1/2 transform -translate-x-1/2 text-xs text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap bg-[#0a0e27] px-2 py-1 rounded">
+                        {{ day.count }} on {{ day.date }}
+                    </span>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        <div class="mt-4 flex items-center justify-center gap-6 text-sm text-gray-400">
+            <div class="flex items-center gap-2">
+                <div class="w-4 h-4 bg-gradient-to-r from-cyan-electric to-purple-accent rounded"></div>
+                <span>Daily Enrollments</span>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Certification Trend -->
+    <div class="bg-[#0a0e27]/60 backdrop-blur-sm border border-cyan-electric/10 rounded-xl p-6">
+        <h2 class="text-xl font-bold mb-6">Certification Trend (Last 30 Days)</h2>
+        {% if certification_trend %}
+        <div class="h-64 flex items-end justify-between gap-1">
+            {% for day in certification_trend %}
+            <div class="flex-1 flex flex-col items-center group">
+                <div class="w-full bg-gradient-to-t from-yellow-500 to-yellow-600 rounded-t transition-all hover:opacity-80 relative"
+                     style="height: {% if day.count > 0 %}{{ day.count|add:5 }}0%{% else %}5%{% endif %}; min-height: 4px;">
+                    <span class="absolute -top-6 left-1/2 transform -translate-x-1/2 text-xs text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap bg-[#0a0e27] px-2 py-1 rounded">
+                        {{ day.count }} on {{ day.date }}
+                    </span>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="h-64 flex items-center justify-center text-gray-400">
+            <p>No certification data available yet</p>
+        </div>
+        {% endif %}
+        <div class="mt-4 flex items-center justify-center gap-6 text-sm text-gray-400">
+            <div class="flex items-center gap-2">
+                <div class="w-4 h-4 bg-gradient-to-r from-yellow-500 to-yellow-600 rounded"></div>
+                <span>Daily Certifications</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Course Performance Table -->
+<div class="bg-[#0a0e27]/60 backdrop-blur-sm border border-cyan-electric/10 rounded-xl p-6 mb-8">
+    <div class="flex items-center justify-between mb-6">
+        <h2 class="text-xl font-bold">Course Performance Overview</h2>
+        <a href="{% url 'dashboard_courses' %}" class="text-cyan-electric hover:text-cyan-electric/80 text-sm font-medium">
+            View All Courses <i class="fas fa-arrow-right ml-1"></i>
+        </a>
+    </div>
+    
+    <div class="overflow-x-auto">
+        <table class="w-full">
+            <thead>
+                <tr class="border-b border-cyan-electric/10">
+                    <th class="text-left py-3 px-4 text-sm font-semibold text-gray-300">Course</th>
+                    <th class="text-center py-3 px-4 text-sm font-semibold text-gray-300">Students</th>
+                    <th class="text-center py-3 px-4 text-sm font-semibold text-gray-300">Lessons</th>
+                    <th class="text-center py-3 px-4 text-sm font-semibold text-gray-300">Completed</th>
+                    <th class="text-center py-3 px-4 text-sm font-semibold text-gray-300">Completion Rate</th>
+                    <th class="text-center py-3 px-4 text-sm font-semibold text-gray-300">Certifications</th>
+                    <th class="text-center py-3 px-4 text-sm font-semibold text-gray-300">Recent (7d)</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for perf in course_performance %}
+                <tr class="border-b border-cyan-electric/5 hover:bg-[#0a0e27]/40 transition-colors">
+                    <td class="py-3 px-4">
+                        <div class="font-semibold">{{ perf.course.name }}</div>
+                        <div class="text-xs text-gray-500">{{ perf.course.course_type|title }} • {{ perf.course.status|title }}</div>
+                    </td>
+                    <td class="py-3 px-4 text-center">
+                        <span class="font-semibold">{{ perf.total_students }}</span>
+                    </td>
+                    <td class="py-3 px-4 text-center">
+                        <span class="text-gray-400">{{ perf.lessons }}</span>
+                    </td>
+                    <td class="py-3 px-4 text-center">
+                        <span class="text-gray-400">{{ perf.completed_lessons }}</span>
+                    </td>
+                    <td class="py-3 px-4 text-center">
+                        <div class="flex items-center justify-center gap-2">
+                            <div class="w-20 bg-gray-700 rounded-full h-2">
+                                <div class="bg-gradient-to-r from-cyan-electric to-purple-accent h-2 rounded-full" 
+                                     style="width: {{ perf.completion_rate }}%"></div>
+                            </div>
+                            <span class="text-sm font-medium">{{ perf.completion_rate|floatformat:1 }}%</span>
+                        </div>
+                    </td>
+                    <td class="py-3 px-4 text-center">
+                        <span class="px-2 py-1 rounded-full bg-yellow-500/20 text-yellow-400 text-xs font-semibold">
+                            {{ perf.certifications }}
+                        </span>
+                    </td>
+                    <td class="py-3 px-4 text-center">
+                        <span class="text-sm {% if perf.recent_enrollments > 0 %}text-green-400{% else %}text-gray-500{% endif %}">
+                            +{{ perf.recent_enrollments }}
+                        </span>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="py-8 text-center text-gray-400">No course data available</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Top Courses & Active Students -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+    <!-- Top 5 Courses -->
+    <div class="bg-[#0a0e27]/60 backdrop-blur-sm border border-cyan-electric/10 rounded-xl p-6">
+        <h2 class="text-xl font-bold mb-6">Top 5 Courses by Enrollment</h2>
+        <div class="space-y-4">
+            {% for course in top_courses %}
+            <div class="flex items-center justify-between p-4 bg-[#0a0e27]/40 rounded-lg hover:bg-[#0a0e27]/60 transition-all">
+                <div class="flex-1">
+                    <div class="font-semibold mb-1">{{ course.course.name }}</div>
+                    <div class="text-xs text-gray-400">{{ course.total_students }} students • {{ course.lessons }} lessons</div>
+                </div>
+                <div class="text-right">
+                    <div class="text-lg font-bold text-cyan-electric">{{ course.total_students }}</div>
+                    <div class="text-xs text-gray-500">students</div>
+                </div>
+            </div>
+            {% empty %}
+            <p class="text-gray-400 text-sm">No course data available</p>
+            {% endfor %}
+        </div>
+    </div>
+    
+    <!-- Most Active Students -->
+    <div class="bg-[#0a0e27]/60 backdrop-blur-sm border border-cyan-electric/10 rounded-xl p-6">
+        <div class="flex items-center justify-between mb-6">
+            <h2 class="text-xl font-bold">Most Active Students (7d)</h2>
+            <a href="{% url 'dashboard_students' %}" class="text-cyan-electric hover:text-cyan-electric/80 text-sm font-medium">
+                View All <i class="fas fa-arrow-right ml-1"></i>
+            </a>
+        </div>
+        <div class="space-y-3">
+            {% for student in active_students_list %}
+            <div class="flex items-center justify-between p-3 bg-[#0a0e27]/40 rounded-lg hover:bg-[#0a0e27]/60 transition-all">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-full bg-cyan-electric/20 flex items-center justify-center">
+                        <i class="fas fa-user text-cyan-electric"></i>
+                    </div>
+                    <div>
+                        <div class="font-semibold text-sm">{{ student.get_full_name|default:student.username }}</div>
+                        <div class="text-xs text-gray-400">{{ student.email|default:"No email" }}</div>
+                    </div>
+                </div>
+                <div class="text-right">
+                    <div class="text-sm font-bold text-green-400">{{ student.progress_count }}</div>
+                    <div class="text-xs text-gray-500">updates</div>
+                </div>
+            </div>
+            {% empty %}
+            <p class="text-gray-400 text-sm">No active students in the last 7 days</p>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- Student Engagement Analytics -->
+<div class="bg-[#0a0e27]/60 backdrop-blur-sm border border-cyan-electric/10 rounded-xl p-6 mb-8">
+    <h2 class="text-xl font-bold mb-6">Student Engagement Analytics</h2>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div class="p-4 bg-[#0a0e27]/40 rounded-lg">
+            <div class="text-2xl font-bold text-cyan-electric mb-1">{{ students_with_completions }}</div>
+            <div class="text-sm text-gray-400">Students with Completions</div>
+            <div class="text-xs text-gray-500 mt-1">Completed at least one course</div>
+        </div>
+        <div class="p-4 bg-[#0a0e27]/40 rounded-lg">
+            <div class="text-2xl font-bold text-orange-400 mb-1">{{ students_zero_progress }}</div>
+            <div class="text-sm text-gray-400">Zero Progress Students</div>
+            <div class="text-xs text-gray-500 mt-1">Need attention</div>
+        </div>
+        <div class="p-4 bg-[#0a0e27]/40 rounded-lg">
+            <div class="text-2xl font-bold text-purple-accent mb-1">{{ avg_lessons_per_student }}</div>
+            <div class="text-sm text-gray-400">Avg Lessons/Student</div>
+            <div class="text-xs text-gray-500 mt-1">Average completion</div>
+        </div>
+        <div class="p-4 bg-[#0a0e27]/40 rounded-lg">
+            <div class="text-2xl font-bold text-red-400 mb-1">{{ drop_off_rate }}%</div>
+            <div class="text-sm text-gray-400">Drop-off Rate</div>
+            <div class="text-xs text-gray-500 mt-1">{{ drop_off_count }} students</div>
+        </div>
+    </div>
+</div>
+
+<!-- Certification Analytics -->
+<div class="bg-[#0a0e27]/60 backdrop-blur-sm border border-cyan-electric/10 rounded-xl p-6 mb-8">
+    <h2 class="text-xl font-bold mb-6">Certification Analytics</h2>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+        <div class="p-4 bg-[#0a0e27]/40 rounded-lg">
+            <div class="text-2xl font-bold text-yellow-400 mb-1">{{ certification_rate }}%</div>
+            <div class="text-sm text-gray-400">Certification Rate</div>
+            <div class="text-xs text-gray-500 mt-1">{{ total_certifications }}/{{ eligible_students_count }} eligible</div>
+        </div>
+        <div class="p-4 bg-[#0a0e27]/40 rounded-lg">
+            <div class="text-2xl font-bold text-yellow-400 mb-1">{{ total_certifications }}</div>
+            <div class="text-sm text-gray-400">Total Certifications</div>
+            <div class="text-xs text-gray-500 mt-1">{{ certifications_30d }} this month</div>
+        </div>
+        <div class="p-4 bg-[#0a0e27]/40 rounded-lg">
+            <div class="text-2xl font-bold text-yellow-400 mb-1">{{ eligible_students_count }}</div>
+            <div class="text-sm text-gray-400">Eligible Students</div>
+            <div class="text-xs text-gray-500 mt-1">Completed all lessons</div>
+        </div>
+        <div class="p-4 bg-[#0a0e27]/40 rounded-lg">
+            <div class="text-2xl font-bold text-yellow-400 mb-1">{{ certifications_7d }}</div>
+            <div class="text-sm text-gray-400">Certifications (7d)</div>
+            <div class="text-xs text-gray-500 mt-1">Recent activity</div>
+        </div>
+    </div>
+    
+    <!-- Trophy Distribution -->
+    <div class="mt-6">
+        <h3 class="text-lg font-semibold mb-4">Trophy Achievement Distribution</h3>
+        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+            <div class="p-4 bg-[#0a0e27]/40 rounded-lg text-center border border-amber-600/30">
+                <div class="text-2xl font-bold text-amber-600 mb-1">{{ trophy_distribution.bronze }}</div>
+                <div class="text-xs text-gray-400">Bronze</div>
+                <div class="text-xs text-gray-500 mt-1">1+ cert</div>
+            </div>
+            <div class="p-4 bg-[#0a0e27]/40 rounded-lg text-center border border-gray-400/30">
+                <div class="text-2xl font-bold text-gray-400 mb-1">{{ trophy_distribution.silver }}</div>
+                <div class="text-xs text-gray-400">Silver</div>
+                <div class="text-xs text-gray-500 mt-1">3+ certs</div>
+            </div>
+            <div class="p-4 bg-[#0a0e27]/40 rounded-lg text-center border border-yellow-500/30">
+                <div class="text-2xl font-bold text-yellow-500 mb-1">{{ trophy_distribution.gold }}</div>
+                <div class="text-xs text-gray-400">Gold</div>
+                <div class="text-xs text-gray-500 mt-1">5+ certs</div>
+            </div>
+            <div class="p-4 bg-[#0a0e27]/40 rounded-lg text-center border border-gray-300/30">
+                <div class="text-2xl font-bold text-gray-300 mb-1">{{ trophy_distribution.platinum }}</div>
+                <div class="text-xs text-gray-400">Platinum</div>
+                <div class="text-xs text-gray-500 mt-1">8+ certs</div>
+            </div>
+            <div class="p-4 bg-[#0a0e27]/40 rounded-lg text-center border border-cyan-400/30">
+                <div class="text-2xl font-bold text-cyan-400 mb-1">{{ trophy_distribution.diamond }}</div>
+                <div class="text-xs text-gray-400">Diamond</div>
+                <div class="text-xs text-gray-500 mt-1">12+ certs</div>
+            </div>
+            <div class="p-4 bg-[#0a0e27]/40 rounded-lg text-center border border-purple-accent/30">
+                <div class="text-2xl font-bold text-purple-accent mb-1">{{ trophy_distribution.ultimate }}</div>
+                <div class="text-xs text-gray-400">Ultimate</div>
+                <div class="text-xs text-gray-500 mt-1">20+ certs</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Exam & Quiz Analytics -->
+<div class="bg-[#0a0e27]/60 backdrop-blur-sm border border-cyan-electric/10 rounded-xl p-6 mb-8">
+    <h2 class="text-xl font-bold mb-6">Exam & Quiz Performance</h2>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- Exam Analytics -->
+        <div class="p-6 bg-[#0a0e27]/40 rounded-lg">
+            <h3 class="text-lg font-semibold mb-4 flex items-center gap-2">
+                <i class="fas fa-clipboard-check text-purple-accent"></i>
+                Exam Analytics
+            </h3>
+            <div class="space-y-4">
+                <div class="flex items-center justify-between">
+                    <span class="text-gray-400">Total Attempts</span>
+                    <span class="text-xl font-bold">{{ total_exam_attempts }}</span>
+                </div>
+                <div class="flex items-center justify-between">
+                    <span class="text-gray-400">Pass Rate</span>
+                    <span class="text-xl font-bold text-green-400">{{ exam_pass_rate }}%</span>
+                </div>
+                <div class="flex items-center justify-between">
+                    <span class="text-gray-400">Average Score</span>
+                    <span class="text-xl font-bold text-cyan-electric">{{ avg_exam_score|floatformat:1 }}%</span>
+                </div>
+                <div class="flex items-center justify-between">
+                    <span class="text-gray-400">Passed Exams</span>
+                    <span class="text-xl font-bold text-green-400">{{ passed_exams }}</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Quiz Analytics -->
+        <div class="p-6 bg-[#0a0e27]/40 rounded-lg">
+            <h3 class="text-lg font-semibold mb-4 flex items-center gap-2">
+                <i class="fas fa-question-circle text-cyan-electric"></i>
+                Quiz Analytics
+            </h3>
+            <div class="space-y-4">
+                <div class="flex items-center justify-between">
+                    <span class="text-gray-400">Total Attempts</span>
+                    <span class="text-xl font-bold">{{ total_quiz_attempts }}</span>
+                </div>
+                <div class="flex items-center justify-between">
+                    <span class="text-gray-400">Pass Rate</span>
+                    <span class="text-xl font-bold text-green-400">{{ quiz_pass_rate }}%</span>
+                </div>
+                <div class="flex items-center justify-between">
+                    <span class="text-gray-400">Average Score</span>
+                    <span class="text-xl font-bold text-cyan-electric">{{ avg_quiz_score|floatformat:1 }}%</span>
+                </div>
+                <div class="flex items-center justify-between">
+                    <span class="text-gray-400">Passed Quizzes</span>
+                    <span class="text-xl font-bold text-green-400">{{ passed_quizzes }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Course Type Performance -->
+<div class="bg-[#0a0e27]/60 backdrop-blur-sm border border-cyan-electric/10 rounded-xl p-6 mb-8">
+    <h2 class="text-xl font-bold mb-6">Performance by Course Type</h2>
+    <div class="overflow-x-auto">
+        <table class="w-full">
+            <thead>
+                <tr class="border-b border-cyan-electric/10">
+                    <th class="text-left py-3 px-4 text-sm font-semibold text-gray-300">Course Type</th>
+                    <th class="text-center py-3 px-4 text-sm font-semibold text-gray-300">Total Courses</th>
+                    <th class="text-center py-3 px-4 text-sm font-semibold text-gray-300">Total Students</th>
+                    <th class="text-center py-3 px-4 text-sm font-semibold text-gray-300">Completion Rate</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for course_type, stats in course_type_stats.items %}
+                <tr class="border-b border-cyan-electric/5 hover:bg-[#0a0e27]/40 transition-colors">
+                    <td class="py-3 px-4">
+                        <span class="font-semibold capitalize">{{ course_type }}</span>
+                    </td>
+                    <td class="py-3 px-4 text-center">
+                        <span class="font-semibold">{{ stats.total_courses }}</span>
+                    </td>
+                    <td class="py-3 px-4 text-center">
+                        <span class="font-semibold">{{ stats.total_students }}</span>
+                    </td>
+                    <td class="py-3 px-4 text-center">
+                        <div class="flex items-center justify-center gap-2">
+                            <div class="w-20 bg-gray-700 rounded-full h-2">
+                                <div class="bg-gradient-to-r from-cyan-electric to-purple-accent h-2 rounded-full" 
+                                     style="width: {{ stats.completion_rate }}%"></div>
+                            </div>
+                            <span class="text-sm font-medium">{{ stats.completion_rate|floatformat:1 }}%</span>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="4" class="py-8 text-center text-gray-400">No course type data available</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Access Source Analytics -->
+<div class="bg-[#0a0e27]/60 backdrop-blur-sm border border-cyan-electric/10 rounded-xl p-6 mb-8">
+    <h2 class="text-xl font-bold mb-6">Access Source Distribution</h2>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="p-4 bg-[#0a0e27]/40 rounded-lg">
+            <div class="flex items-center justify-between mb-2">
+                <i class="fas fa-user-plus text-cyan-electric"></i>
+                <span class="text-2xl font-bold">{{ access_by_method.enrollment }}</span>
+            </div>
+            <div class="text-sm text-gray-400">Direct Enrollments</div>
+        </div>
+        <div class="p-4 bg-[#0a0e27]/40 rounded-lg">
+            <div class="flex items-center justify-between mb-2">
+                <i class="fas fa-unlock text-purple-accent"></i>
+                <span class="text-2xl font-bold">{{ access_by_method.course_access }}</span>
+            </div>
+            <div class="text-sm text-gray-400">Course Access Grants</div>
+        </div>
+        <div class="p-4 bg-[#0a0e27]/40 rounded-lg">
+            <div class="flex items-center justify-between mb-2">
+                <i class="fas fa-box text-yellow-400"></i>
+                <span class="text-2xl font-bold">{{ access_by_method.bundle }}</span>
+            </div>
+            <div class="text-sm text-gray-400">Bundle Purchases</div>
+        </div>
+        <div class="p-4 bg-[#0a0e27]/40 rounded-lg">
+            <div class="flex items-center justify-between mb-2">
+                <i class="fas fa-users text-green-400"></i>
+                <span class="text-2xl font-bold">{{ access_by_method.cohort }}</span>
+            </div>
+            <div class="text-sm text-gray-400">Cohort Memberships</div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Stats Summary -->
+<div class="bg-[#0a0e27]/60 backdrop-blur-sm border border-cyan-electric/10 rounded-xl p-6">
+    <h2 class="text-xl font-bold mb-6">Quick Stats Summary</h2>
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div class="text-center p-4 bg-[#0a0e27]/40 rounded-lg">
+            <div class="text-2xl font-bold text-cyan-electric">{{ active_students }}</div>
+            <div class="text-xs text-gray-400 mt-1">Active Students</div>
+        </div>
+        <div class="text-center p-4 bg-[#0a0e27]/40 rounded-lg">
+            <div class="text-2xl font-bold text-purple-accent">{{ enrollments_30d }}</div>
+            <div class="text-xs text-gray-400 mt-1">Enrollments (30d)</div>
+        </div>
+        <div class="text-center p-4 bg-[#0a0e27]/40 rounded-lg">
+            <div class="text-2xl font-bold text-yellow-400">{{ certifications_30d }}</div>
+            <div class="text-xs text-gray-400 mt-1">Certifications (30d)</div>
+        </div>
+        <div class="text-center p-4 bg-[#0a0e27]/40 rounded-lg">
+            <div class="text-2xl font-bold text-green-400">{{ completion_rate }}%</div>
+            <div class="text-xs text-gray-400 mt-1">Avg Completion</div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
