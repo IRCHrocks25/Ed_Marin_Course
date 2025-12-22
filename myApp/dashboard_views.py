@@ -32,6 +32,7 @@ from .models import (
     ExamAttempt,
     Certification,
     LessonQuiz,
+    LessonQuizAttempt,
     LessonQuizQuestion,
     Bundle,
     BundlePurchase,
@@ -119,7 +120,7 @@ def dashboard_home(request):
     # Recent Activity (last 7 days)
     seven_days_ago = timezone.now() - timedelta(days=7)
     recent_progress = UserProgress.objects.filter(
-        updated_at__gte=seven_days_ago
+        last_accessed__gte=seven_days_ago
     ).count()
     recent_certifications = Certification.objects.filter(
         issued_at__gte=seven_days_ago
@@ -1496,7 +1497,7 @@ def dashboard_analytics(request):
     # Progress Analytics
     total_progress = UserProgress.objects.count()
     completed_lessons = UserProgress.objects.filter(completed=True).count()
-    progress_7d = UserProgress.objects.filter(updated_at__gte=last_7_days).count()
+    progress_7d = UserProgress.objects.filter(last_accessed__gte=last_7_days).count()
     completion_rate = (completed_lessons / total_progress * 100) if total_progress > 0 else 0
     
     # Certification Analytics
@@ -1576,7 +1577,7 @@ def dashboard_analytics(request):
     active_students_list = User.objects.filter(
         is_staff=False, is_superuser=False
     ).annotate(
-        progress_count=Count('userprogress', filter=Q(userprogress__updated_at__gte=last_7_days))
+        progress_count=Count('progress', filter=Q(progress__last_accessed__gte=last_7_days))
     ).filter(progress_count__gt=0).order_by('-progress_count')[:10]
     
     # Additional Phase 1 Analytics

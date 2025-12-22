@@ -108,15 +108,47 @@
 
     <!-- My Courses Section -->
     <div class="space-y-6">
-        <h2 class="text-2xl font-bold">My Courses</h2>
+        <div class="flex items-center justify-between">
+            <h2 class="text-2xl font-bold">My Courses</h2>
+            
+            <!-- Filter and Sort Controls -->
+            <div class="flex items-center gap-3">
+                <!-- Filter by Favorites -->
+                <a href="?favorites=true&sort={{ sort_by }}" 
+                   class="px-4 py-2 rounded-lg text-sm font-medium transition-all {% if filter_favorites == 'true' %}bg-yellow-500/20 border border-yellow-500/30 text-yellow-400{% else %}bg-[#0a0e27]/60 border border-cyan-electric/10 text-gray-300 hover:border-cyan-electric/30{% endif %}">
+                    <i class="fas fa-heart"></i> Favorites
+                </a>
+                <a href="?sort={{ sort_by }}" 
+                   class="px-4 py-2 rounded-lg text-sm font-medium transition-all {% if filter_favorites != 'true' %}bg-cyan-electric/20 border border-cyan-electric/30 text-cyan-electric{% else %}bg-[#0a0e27]/60 border border-cyan-electric/10 text-gray-300 hover:border-cyan-electric/30{% endif %}">
+                    All Courses
+                </a>
+                
+                <!-- Sort Options -->
+                <select id="sortSelect" onchange="window.location.href='?sort=' + this.value + '&favorites={{ filter_favorites }}'" 
+                        class="px-4 py-2 bg-[#0a0e27]/60 border border-cyan-electric/10 rounded-lg text-sm text-gray-300 focus:border-cyan-electric/30 focus:outline-none">
+                    <option value="progress" {% if sort_by == 'progress' %}selected{% endif %}>Sort by Progress</option>
+                    <option value="favorites" {% if sort_by == 'favorites' %}selected{% endif %}>Sort by Favorites</option>
+                    <option value="name" {% if sort_by == 'name' %}selected{% endif %}>Sort by Name</option>
+                </select>
+            </div>
+        </div>
         
         {% if my_courses %}
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {% for data in my_courses %}
-            <div class="bg-[#0a0e27]/60 backdrop-blur-sm border border-cyan-electric/10 rounded-xl p-6 hover:border-cyan-electric/30 transition-all">
+            <div class="bg-[#0a0e27]/60 backdrop-blur-sm border border-cyan-electric/10 rounded-xl p-6 hover:border-cyan-electric/30 transition-all {% if data.is_favorited %}ring-2 ring-yellow-500/30{% endif %}">
                 <div class="flex items-start justify-between mb-4">
                     <div class="flex-1">
-                        <h3 class="text-xl font-bold mb-2">{{ data.course.name }}</h3>
+                        <div class="flex items-center gap-2 mb-2">
+                            <h3 class="text-xl font-bold">{{ data.course.name }}</h3>
+                            <!-- Favorite Button -->
+                            <button onclick="toggleFavorite({{ data.course.id }}, this)" 
+                                    class="favorite-btn p-2 rounded-lg transition-all hover:scale-110 {% if data.is_favorited %}text-yellow-400{% else %}text-gray-400 hover:text-yellow-400{% endif %}"
+                                    data-course-id="{{ data.course.id }}"
+                                    data-is-favorited="{{ data.is_favorited|yesno:'true,false' }}">
+                                <i class="fas fa-heart {% if data.is_favorited %}fas{% else %}far{% endif %}"></i>
+                            </button>
+                        </div>
                         <p class="text-sm text-gray-400 mb-4">{{ data.course.short_description|truncatewords:20 }}</p>
                         
                         <!-- Progress Info -->
@@ -145,22 +177,16 @@
                             </div>
                         </div>
                         
-                        <!-- Access Source & Status -->
-                        {% if data.access_record %}
+                        <!-- Access Expiration (only show if expiring soon) -->
+                        {% if data.access_record and data.access_record.expires_at %}
                         <div class="mb-4">
-                            <div class="text-xs text-gray-400 mb-1">Access granted via:</div>
-                            <span class="px-2 py-1 bg-cyan-electric/10 border border-cyan-electric/20 rounded text-xs text-cyan-electric">
-                                {{ data.access_record.get_source_display }}
-                            </span>
-                            {% if data.access_record.expires_at %}
-                            <span class="ml-2 text-xs text-yellow-400">
+                            <span class="text-xs text-yellow-400">
                                 <i class="fas fa-clock"></i> Expires: {{ data.access_record.expires_at|date:"M d, Y" }}
                             </span>
-                            {% endif %}
                         </div>
                         {% endif %}
                         
-                        <!-- Exam & Certification Status -->
+                        <!-- Exam & Certification Status (only show positive statuses) -->
                         <div class="flex flex-wrap gap-2 mb-4">
                             {% if data.exam_info.exists %}
                             {% if data.exam_info.passed %}
@@ -171,10 +197,6 @@
                             <span class="px-3 py-1 bg-yellow-500/10 border border-yellow-500/20 rounded-full text-xs text-yellow-400">
                                 <i class="fas fa-clock"></i> Exam Available
                             </span>
-                            {% else %}
-                            <span class="px-3 py-1 bg-gray-500/10 border border-gray-500/20 rounded-full text-xs text-gray-400">
-                                <i class="fas fa-lock"></i> Exam Locked
-                            </span>
                             {% endif %}
                             {% endif %}
                             
@@ -183,28 +205,38 @@
                             <span class="px-3 py-1 bg-gradient-to-r from-yellow-500/20 to-yellow-600/20 border border-yellow-500/30 rounded-full text-xs text-yellow-300">
                                 <i class="fas fa-certificate"></i> Certified
                             </span>
-                            {% else %}
+                            {% elif data.cert_status == 'eligible' %}
                             <span class="px-3 py-1 bg-cyan-electric/10 border border-cyan-electric/20 rounded-full text-xs text-cyan-electric">
-                                {{ data.cert_display }}
+                                <i class="fas fa-certificate"></i> Eligible for Certification
                             </span>
                             {% endif %}
-                            {% else %}
-                            <span class="px-3 py-1 bg-gray-500/10 border border-gray-500/20 rounded-full text-xs text-gray-400">
-                                {{ data.cert_display }}
-                            </span>
                             {% endif %}
                         </div>
                     </div>
                 </div>
                 
                 <div class="flex items-center gap-3">
-                    <a href="{% url 'student_course_progress' data.course.slug %}" class="flex-1 px-4 py-2 bg-cyan-electric/10 hover:bg-cyan-electric/20 border border-cyan-electric/20 rounded-lg text-sm font-medium text-center transition-all">
-                        View Details
-                    </a>
-                    {% if data.course.lessons.first %}
-                    <a href="{% url 'lesson_detail' data.course.slug data.course.lessons.first.slug %}" class="px-4 py-2 bg-gradient-to-r from-cyan-electric to-purple-accent hover:from-cyan-electric/90 hover:to-purple-accent/90 text-[#0a0e27] font-semibold rounded-lg transition-all">
-                        Continue
-                    </a>
+                    {% if data.has_any_progress %}
+                        <!-- Course in progress - show Continue Learning and View Progress -->
+                        <a href="{% url 'student_course_progress' data.course.slug %}" class="flex-1 px-4 py-2 bg-cyan-electric/10 hover:bg-cyan-electric/20 border border-cyan-electric/20 rounded-lg text-sm font-medium text-center transition-all">
+                            View Progress
+                        </a>
+                        {% if data.course.lessons.first %}
+                        <a href="{% url 'lesson_detail' data.course.slug data.course.lessons.first.slug %}" class="px-4 py-2 bg-gradient-to-r from-cyan-electric to-purple-accent hover:from-cyan-electric/90 hover:to-purple-accent/90 text-[#0a0e27] font-semibold rounded-lg transition-all">
+                            Continue Learning
+                        </a>
+                        {% endif %}
+                    {% else %}
+                        <!-- Course not started - show Start Course -->
+                        {% if data.course.lessons.first %}
+                        <a href="{% url 'lesson_detail' data.course.slug data.course.lessons.first.slug %}" class="flex-1 px-4 py-2 bg-gradient-to-r from-cyan-electric to-purple-accent hover:from-cyan-electric/90 hover:to-purple-accent/90 text-[#0a0e27] font-semibold rounded-lg text-center transition-all">
+                            Start Course
+                        </a>
+                        {% else %}
+                        <a href="{% url 'student_course_progress' data.course.slug %}" class="flex-1 px-4 py-2 bg-cyan-electric/10 hover:bg-cyan-electric/20 border border-cyan-electric/20 rounded-lg text-sm font-medium text-center transition-all">
+                            View Details
+                        </a>
+                        {% endif %}
                     {% endif %}
                 </div>
             </div>
@@ -299,6 +331,113 @@
     </div>
     {% endif %}
 </div>
+
+<script>
+function toggleFavorite(courseId, buttonElement) {
+    const icon = buttonElement.querySelector('i');
+    const isCurrentlyFavorited = buttonElement.dataset.isFavorited === 'true';
+    
+    // Get the card element (parent container)
+    const cardElement = buttonElement.closest('.bg-\\[\\#0a0e27\\]\\/60') || buttonElement.closest('[class*="bg-"]');
+    
+    // Optimistic UI update
+    if (isCurrentlyFavorited) {
+        icon.classList.remove('fas');
+        icon.classList.add('far');
+        buttonElement.classList.remove('text-yellow-400');
+        buttonElement.classList.add('text-gray-400');
+        if (cardElement) cardElement.classList.remove('ring-2', 'ring-yellow-500/30');
+    } else {
+        icon.classList.remove('far');
+        icon.classList.add('fas');
+        buttonElement.classList.remove('text-gray-400');
+        buttonElement.classList.add('text-yellow-400');
+        if (cardElement) cardElement.classList.add('ring-2', 'ring-yellow-500/30');
+    }
+    buttonElement.dataset.isFavorited = (!isCurrentlyFavorited).toString();
+    
+    // Make API call
+    fetch(`/api/courses/${courseId}/favorite/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken'),
+            'Content-Type': 'application/json',
+        },
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Update button state based on response
+            if (data.is_favorited) {
+                icon.classList.remove('far');
+                icon.classList.add('fas');
+                buttonElement.classList.remove('text-gray-400');
+                buttonElement.classList.add('text-yellow-400');
+                if (cardElement) cardElement.classList.add('ring-2', 'ring-yellow-500/30');
+            } else {
+                icon.classList.remove('fas');
+                icon.classList.add('far');
+                buttonElement.classList.remove('text-yellow-400');
+                buttonElement.classList.add('text-gray-400');
+                if (cardElement) cardElement.classList.remove('ring-2', 'ring-yellow-500/30');
+            }
+            buttonElement.dataset.isFavorited = data.is_favorited.toString();
+        } else {
+            // Revert optimistic update on error
+            if (isCurrentlyFavorited) {
+                icon.classList.remove('far');
+                icon.classList.add('fas');
+                buttonElement.classList.remove('text-gray-400');
+                buttonElement.classList.add('text-yellow-400');
+                if (cardElement) cardElement.classList.add('ring-2', 'ring-yellow-500/30');
+            } else {
+                icon.classList.remove('fas');
+                icon.classList.add('far');
+                buttonElement.classList.remove('text-yellow-400');
+                buttonElement.classList.add('text-gray-400');
+                if (cardElement) cardElement.classList.remove('ring-2', 'ring-yellow-500/30');
+            }
+            buttonElement.dataset.isFavorited = isCurrentlyFavorited.toString();
+            alert('Error: ' + (data.message || 'Failed to update favorite'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        // Revert optimistic update
+        if (isCurrentlyFavorited) {
+            icon.classList.remove('far');
+            icon.classList.add('fas');
+            buttonElement.classList.remove('text-gray-400');
+            buttonElement.classList.add('text-yellow-400');
+            if (cardElement) cardElement.classList.add('ring-2', 'ring-yellow-500/30');
+        } else {
+            icon.classList.remove('fas');
+            icon.classList.add('far');
+            buttonElement.classList.remove('text-yellow-400');
+            buttonElement.classList.add('text-gray-400');
+            if (cardElement) cardElement.classList.remove('ring-2', 'ring-yellow-500/30');
+        }
+        buttonElement.dataset.isFavorited = isCurrentlyFavorited.toString();
+        alert('Error updating favorite. Please try again.');
+    });
+}
+
+// Helper function to get CSRF token
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+</script>
 {% endblock %}
 
 

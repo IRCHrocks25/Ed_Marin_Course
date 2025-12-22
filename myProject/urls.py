@@ -74,6 +74,9 @@ urlpatterns = [
     path('api/lessons/<int:lesson_id>/progress/', views.update_video_progress, name='update_video_progress'),
     path('api/lessons/<int:lesson_id>/complete/', views.complete_lesson, name='complete_lesson'),
     
+    # Favorite course endpoint
+    path('api/courses/<int:course_id>/favorite/', views.toggle_favorite_course, name='toggle_favorite_course'),
+    
     # Admin (optional - can be removed if not needed)
     path('admin/', admin.site.urls),
 ]

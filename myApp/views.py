@@ -79,8 +79,64 @@ def courses(request):
     if search_query:
         courses = courses.filter(name__icontains=search_query)
     
+    # Get progress and favorite status for each course if user is authenticated
+    courses_data = []
+    in_progress_courses = []
+    not_started_courses = []
+    user = request.user if request.user.is_authenticated else None
+    
+    for course in courses:
+        course_info = {
+            'course': course,
+            'has_any_progress': False,
+            'progress_percentage': 0,
+            'is_favorited': False,
+        }
+        
+        if user:
+            # Check if course has any progress
+            has_any_progress = UserProgress.objects.filter(
+                user=user,
+                lesson__course=course
+            ).filter(
+                Q(completed=True) | Q(video_watch_percentage__gt=0) | Q(status__in=['in_progress', 'completed'])
+            ).exists()
+            
+            # Calculate progress percentage
+            total_lessons = course.lessons.count()
+            completed_lessons = UserProgress.objects.filter(
+                user=user,
+                lesson__course=course,
+                completed=True
+            ).count()
+            progress_percentage = int((completed_lessons / total_lessons * 100)) if total_lessons > 0 else 0
+            
+            # Check if favorited
+            from .models import FavoriteCourse
+            is_favorited = FavoriteCourse.objects.filter(user=user, course=course).exists()
+            
+            course_info.update({
+                'has_any_progress': has_any_progress,
+                'progress_percentage': progress_percentage,
+                'is_favorited': is_favorited,
+            })
+            
+            # Separate into in-progress and not-started
+            if has_any_progress:
+                in_progress_courses.append(course_info)
+            else:
+                not_started_courses.append(course_info)
+        else:
+            # For non-authenticated users, put all in not_started
+            not_started_courses.append(course_info)
+        
+        courses_data.append(course_info)
+    
     return render(request, 'courses.html', {
-        'courses': courses,
+        'courses_data': courses_data,  # Keep for backward compatibility
+        'in_progress_courses': in_progress_courses,
+        'not_started_courses': not_started_courses,
+        'courses': courses,  # Keep for backward compatibility
         'selected_type': course_type,
         'search_query': search_query,
     })
@@ -762,6 +818,34 @@ def complete_lesson(request, lesson_id):
 
 @require_http_methods(["POST"])
 @login_required
+def toggle_favorite_course(request, course_id):
+    """Toggle favorite status for a course"""
+    from .models import FavoriteCourse, Course
+    course = get_object_or_404(Course, id=course_id)
+    user = request.user
+    
+    favorite, created = FavoriteCourse.objects.get_or_create(
+        user=user,
+        course=course
+    )
+    
+    if not created:
+        # Already favorited, remove it
+        favorite.delete()
+        is_favorited = False
+    else:
+        # Just favorited
+        is_favorited = True
+    
+    return JsonResponse({
+        'success': True,
+        'is_favorited': is_favorited,
+        'message': 'Course favorited' if is_favorited else 'Course unfavorited'
+    })
+
+
+@require_http_methods(["POST"])
+@login_required
 def chatbot_webhook(request):
     """Forward chatbot messages to the appropriate webhook based on lesson"""
     # Default webhook URL
@@ -891,6 +975,14 @@ def student_dashboard(request):
         
         progress_percentage = int((completed_lessons / total_lessons * 100)) if total_lessons > 0 else 0
         
+        # Check if course has any progress at all (watched videos, even if not completed)
+        has_any_progress = UserProgress.objects.filter(
+            user=user,
+            lesson__course=course
+        ).filter(
+            Q(completed=True) | Q(video_watch_percentage__gt=0) | Q(status__in=['in_progress', 'completed'])
+        ).exists()
+        
         # Get average video watch percentage
         avg_watch = UserProgress.objects.filter(
             user=user,
@@ -924,6 +1016,10 @@ def student_dashboard(request):
             cert_display = 'Not Eligible' if progress_percentage < 100 else 'Eligible'
             certification = None
         
+        # Check if course is favorited
+        from .models import FavoriteCourse
+        is_favorited = FavoriteCourse.objects.filter(user=user, course=course).exists()
+        
         my_courses_data.append({
             'course': course,
             'enrollment': enrollment,
@@ -931,11 +1027,13 @@ def student_dashboard(request):
             'total_lessons': total_lessons,
             'completed_lessons': completed_lessons,
             'progress_percentage': progress_percentage,
+            'has_any_progress': has_any_progress,
             'avg_watch_percentage': round(avg_watch, 1),
             'exam_info': exam_info,
             'certification': certification,
             'cert_status': cert_status,
             'cert_display': cert_display,
+            'is_favorited': is_favorited,
         })
     
     # Also include legacy enrollments that might not have access records yet
@@ -1036,8 +1134,22 @@ def student_dashboard(request):
             'reason': course.get_visibility_display(),
         })
     
-    # Sort by progress (descending)
-    my_courses_data.sort(key=lambda x: x['progress_percentage'], reverse=True)
+    # Get filter/sort parameters
+    filter_favorites = request.GET.get('favorites', '')
+    sort_by = request.GET.get('sort', 'progress')  # progress, favorites, name
+    
+    # Filter by favorites if requested
+    if filter_favorites == 'true':
+        my_courses_data = [c for c in my_courses_data if c.get('is_favorited', False)]
+    
+    # Sort courses
+    if sort_by == 'favorites':
+        # Favorites first, then by progress
+        my_courses_data.sort(key=lambda x: (not x.get('is_favorited', False), -x['progress_percentage']))
+    elif sort_by == 'name':
+        my_courses_data.sort(key=lambda x: x['course'].name.lower())
+    else:  # default: progress
+        my_courses_data.sort(key=lambda x: x['progress_percentage'], reverse=True)
     
     # Overall stats
     total_courses = len(my_courses_data)
@@ -1056,6 +1168,8 @@ def student_dashboard(request):
         'total_lessons_all': total_lessons_all,
         'completed_lessons_all': completed_lessons_all,
         'overall_progress': overall_progress,
+        'filter_favorites': filter_favorites,
+        'sort_by': sort_by,
     })
 
 
