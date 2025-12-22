@@ -130,8 +130,85 @@
         </main>
     </div>
     
+    <!-- Universal Preloader -->
+    <div id="universal-preloader" class="fixed inset-0 z-50 hidden items-center justify-center bg-[#0a0e27]/95 backdrop-blur-md">
+        <div class="text-center">
+            <!-- Animated Spinner -->
+            <div class="relative mb-8">
+                <div class="absolute inset-0 flex items-center justify-center">
+                    <div class="w-32 h-32 border-4 border-cyan-electric/30 rounded-full animate-spin" style="border-top-color: cyan-electric;"></div>
+                </div>
+                <div class="absolute inset-0 flex items-center justify-center">
+                    <div class="w-24 h-24 border-4 border-purple-accent/30 rounded-full animate-spin" style="border-top-color: purple-accent; animation-direction: reverse; animation-duration: 1.5s;"></div>
+                </div>
+                <div class="relative flex items-center justify-center">
+                    <div class="w-16 h-16 bg-gradient-to-br from-cyan-electric to-purple-accent rounded-full flex items-center justify-center shadow-2xl shadow-cyan-electric/50">
+                        <i class="fas fa-spinner text-2xl text-[#0a0e27] animate-spin"></i>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Loading Text -->
+            <h3 class="text-2xl font-bold mb-4 bg-gradient-to-r from-cyan-electric to-purple-accent bg-clip-text text-transparent" id="preloader-text">
+                Saving...
+            </h3>
+            <p class="text-gray-400">Please wait while we process your request</p>
+        </div>
+    </div>
+
     <!-- JavaScript -->
     <script src="{% static 'js/main.js' %}"></script>
+    
+    <script>
+    // Universal preloader for all form submissions
+    (function() {
+        // Show preloader on form submit
+        document.addEventListener('submit', function(e) {
+            const form = e.target;
+            
+            // Skip if it's the AI form (has its own loader)
+            if (form.id === 'ai-form') {
+                return;
+            }
+            
+            // Skip if form has data-no-loader attribute
+            if (form.hasAttribute('data-no-loader')) {
+                return;
+            }
+            
+            // Get form action text
+            let actionText = 'Saving...';
+            const submitButton = form.querySelector('button[type="submit"], input[type="submit"]');
+            if (submitButton) {
+                const buttonText = submitButton.textContent.trim() || submitButton.value;
+                if (buttonText) {
+                    actionText = buttonText.replace(/<[^>]*>/g, '').trim(); // Remove HTML tags
+                    if (actionText.length > 30) {
+                        actionText = actionText.substring(0, 30) + '...';
+                    }
+                }
+            }
+            
+            // Set text and show preloader
+            document.getElementById('preloader-text').textContent = actionText || 'Saving...';
+            const loader = document.getElementById('universal-preloader');
+            loader.classList.remove('hidden');
+            loader.classList.add('flex');
+            document.body.style.overflow = 'hidden';
+        });
+        
+        // Hide preloader on page load (in case of redirect)
+        window.addEventListener('load', function() {
+            const loader = document.getElementById('universal-preloader');
+            if (loader) {
+                loader.classList.add('hidden');
+                loader.classList.remove('flex');
+                document.body.style.overflow = '';
+            }
+        });
+    })();
+    </script>
+    
     {% block extra_js %}{% endblock %}
 </body>
 </html>

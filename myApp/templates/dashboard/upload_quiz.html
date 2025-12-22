@@ -26,7 +26,7 @@
         </div>
         
         <!-- Upload Tab -->
-        <form method="POST" enctype="multipart/form-data" id="upload-form">
+        <form method="POST" enctype="multipart/form-data" id="upload-form" onsubmit="showUploadLoader()">
             {% csrf_token %}
             <input type="hidden" name="generation_method" value="upload">
             <div class="space-y-6" id="upload-content">
@@ -109,7 +109,7 @@
         </form>
         
         <!-- AI Generate Tab -->
-        <form method="POST" id="ai-form" style="display: none;">
+        <form method="POST" id="ai-form" style="display: none;" onsubmit="showAILoader()">
             {% csrf_token %}
             <input type="hidden" name="generation_method" value="ai">
             <div class="space-y-6" id="ai-content">
@@ -180,6 +180,97 @@
         </form>
     </div>
 </div>
+
+<!-- AI Generation Preloader -->
+<div id="ai-loader" class="fixed inset-0 bg-[#0a0e27]/95 backdrop-blur-md z-50 flex items-center justify-center hidden">
+    <div class="text-center">
+        <!-- Animated AI Icon -->
+        <div class="relative mb-8">
+            <div class="absolute inset-0 flex items-center justify-center">
+                <div class="w-32 h-32 border-4 border-purple-accent/30 rounded-full animate-ping"></div>
+            </div>
+            <div class="absolute inset-0 flex items-center justify-center">
+                <div class="w-24 h-24 border-4 border-cyan-electric/30 rounded-full animate-ping" style="animation-delay: 0.5s;"></div>
+            </div>
+            <div class="relative flex items-center justify-center">
+                <div class="w-20 h-20 bg-gradient-to-br from-purple-accent to-cyan-electric rounded-full flex items-center justify-center shadow-2xl shadow-purple-accent/50">
+                    <i class="fas fa-robot text-4xl text-[#0a0e27] animate-pulse"></i>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Loading Text -->
+        <h3 class="text-2xl font-bold mb-4 bg-gradient-to-r from-purple-accent to-cyan-electric bg-clip-text text-transparent">
+            AI is Generating Your Quiz...
+        </h3>
+        <p class="text-gray-400 mb-6">Analyzing lesson content and creating questions</p>
+        
+        <!-- Animated Dots -->
+        <div class="flex items-center justify-center gap-2">
+            <div class="w-3 h-3 bg-purple-accent rounded-full animate-bounce" style="animation-delay: 0s;"></div>
+            <div class="w-3 h-3 bg-cyan-electric rounded-full animate-bounce" style="animation-delay: 0.2s;"></div>
+            <div class="w-3 h-3 bg-purple-accent rounded-full animate-bounce" style="animation-delay: 0.4s;"></div>
+        </div>
+        
+        <!-- Progress Bar -->
+        <div class="mt-8 w-64 mx-auto">
+            <div class="h-2 bg-[#1a1f3a] rounded-full overflow-hidden">
+                <div class="h-full bg-gradient-to-r from-purple-accent via-cyan-electric to-purple-accent rounded-full animate-progress"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+@keyframes progress {
+    0% {
+        transform: translateX(-100%);
+    }
+    100% {
+        transform: translateX(100%);
+    }
+}
+
+.animate-progress {
+    animation: progress 2s ease-in-out infinite;
+    background-size: 200% 100%;
+    background-image: linear-gradient(to right, transparent, rgba(255, 255, 255, 0.3), transparent);
+}
+</style>
+
+<script>
+function showAILoader() {
+    const loader = document.getElementById('ai-loader');
+    if (loader) {
+        loader.classList.remove('hidden');
+        // Prevent form submission if validation fails
+        const form = document.getElementById('ai-form');
+        const lessonSelect = form.querySelector('select[name="lesson_id"]');
+        if (!lessonSelect.value) {
+            loader.classList.add('hidden');
+            return false;
+        }
+    }
+}
+
+// Hide loader if page is reloaded or if there's an error
+window.addEventListener('load', function() {
+    const loader = document.getElementById('ai-loader');
+    if (loader) {
+        loader.classList.add('hidden');
+    }
+});
+
+function showUploadLoader() {
+    const loader = document.getElementById('universal-preloader');
+    if (loader) {
+        document.getElementById('preloader-text').textContent = 'Uploading Quiz...';
+        loader.classList.remove('hidden');
+        loader.classList.add('flex');
+        document.body.style.overflow = 'hidden';
+    }
+}
+</script>
 
 <script>
 let currentTab = 'upload';

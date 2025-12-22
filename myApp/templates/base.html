@@ -79,8 +79,67 @@
         {% block content %}{% endblock %}
     </main>
     
+    <!-- Universal Preloader for Student Views -->
+    <div id="student-preloader" class="fixed inset-0 z-50 hidden items-center justify-center bg-[#0a0e27]/95 backdrop-blur-md">
+        <div class="text-center">
+            <!-- Animated Spinner -->
+            <div class="relative mb-8">
+                <div class="absolute inset-0 flex items-center justify-center">
+                    <div class="w-32 h-32 border-4 border-cyan-electric/30 rounded-full animate-spin" style="border-top-color: cyan-electric;"></div>
+                </div>
+                <div class="absolute inset-0 flex items-center justify-center">
+                    <div class="w-24 h-24 border-4 border-purple-accent/30 rounded-full animate-spin" style="border-top-color: purple-accent; animation-direction: reverse; animation-duration: 1.5s;"></div>
+                </div>
+                <div class="relative flex items-center justify-center">
+                    <div class="w-16 h-16 bg-gradient-to-br from-cyan-electric to-purple-accent rounded-full flex items-center justify-center shadow-2xl shadow-cyan-electric/50">
+                        <i class="fas fa-spinner text-2xl text-[#0a0e27] animate-spin"></i>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Loading Text -->
+            <h3 class="text-2xl font-bold mb-4 bg-gradient-to-r from-cyan-electric to-purple-accent bg-clip-text text-transparent" id="student-preloader-text">
+                Processing...
+            </h3>
+            <p class="text-gray-400">Please wait</p>
+        </div>
+    </div>
+
     <!-- JavaScript -->
     <script src="{% static 'js/main.js' %}"></script>
+    
+    <script>
+    // Universal preloader functions for student views
+    function showStudentPreloader(text = 'Processing...') {
+        const loader = document.getElementById('student-preloader');
+        if (loader) {
+            document.getElementById('student-preloader-text').textContent = text;
+            loader.classList.remove('hidden');
+            loader.classList.add('flex');
+            document.body.style.overflow = 'hidden';
+        }
+    }
+    
+    function hideStudentPreloader() {
+        const loader = document.getElementById('student-preloader');
+        if (loader) {
+            loader.classList.add('hidden');
+            loader.classList.remove('flex');
+            document.body.style.overflow = '';
+        }
+    }
+    
+    // Show preloader on quiz form submission
+    document.addEventListener('DOMContentLoaded', function() {
+        const quizForm = document.getElementById('quiz-form');
+        if (quizForm) {
+            quizForm.addEventListener('submit', function(e) {
+                showStudentPreloader('Submitting Quiz...');
+            });
+        }
+    });
+    </script>
+    
     {% block extra_js %}{% endblock %}
 </body>
 </html>

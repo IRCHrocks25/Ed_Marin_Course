@@ -356,6 +356,10 @@ function toggleFavorite(courseId, buttonElement) {
     }
     buttonElement.dataset.isFavorited = (!isCurrentlyFavorited).toString();
     
+    // Show small loading indicator
+    const originalIconHTML = icon.outerHTML;
+    icon.className = 'fas fa-spinner fa-spin text-yellow-400';
+    
     // Make API call
     fetch(`/api/courses/${courseId}/favorite/`, {
         method: 'POST',
@@ -368,6 +372,7 @@ function toggleFavorite(courseId, buttonElement) {
     .then(data => {
         if (data.success) {
             // Update button state based on response
+            icon.classList.remove('fa-spinner', 'fa-spin');
             if (data.is_favorited) {
                 icon.classList.remove('far');
                 icon.classList.add('fas');
@@ -383,40 +388,16 @@ function toggleFavorite(courseId, buttonElement) {
             }
             buttonElement.dataset.isFavorited = data.is_favorited.toString();
         } else {
-            // Revert optimistic update on error
-            if (isCurrentlyFavorited) {
-                icon.classList.remove('far');
-                icon.classList.add('fas');
-                buttonElement.classList.remove('text-gray-400');
-                buttonElement.classList.add('text-yellow-400');
-                if (cardElement) cardElement.classList.add('ring-2', 'ring-yellow-500/30');
-            } else {
-                icon.classList.remove('fas');
-                icon.classList.add('far');
-                buttonElement.classList.remove('text-yellow-400');
-                buttonElement.classList.add('text-gray-400');
-                if (cardElement) cardElement.classList.remove('ring-2', 'ring-yellow-500/30');
-            }
+            // Revert on error
+            icon.outerHTML = originalIconHTML;
             buttonElement.dataset.isFavorited = isCurrentlyFavorited.toString();
             alert('Error: ' + (data.message || 'Failed to update favorite'));
         }
     })
     .catch(error => {
         console.error('Error:', error);
-        // Revert optimistic update
-        if (isCurrentlyFavorited) {
-            icon.classList.remove('far');
-            icon.classList.add('fas');
-            buttonElement.classList.remove('text-gray-400');
-            buttonElement.classList.add('text-yellow-400');
-            if (cardElement) cardElement.classList.add('ring-2', 'ring-yellow-500/30');
-        } else {
-            icon.classList.remove('fas');
-            icon.classList.add('far');
-            buttonElement.classList.remove('text-yellow-400');
-            buttonElement.classList.add('text-gray-400');
-            if (cardElement) cardElement.classList.remove('ring-2', 'ring-yellow-500/30');
-        }
+        // Revert on error
+        icon.outerHTML = originalIconHTML;
         buttonElement.dataset.isFavorited = isCurrentlyFavorited.toString();
         alert('Error updating favorite. Please try again.');
     });

@@ -500,6 +500,21 @@ def dashboard_lesson_quiz(request, lesson_id):
                 messages.success(request, 'Question added.')
             else:
                 messages.error(request, 'Question text is required.')
+        elif action == 'edit_question':
+            q_id = request.POST.get('question_id')
+            if q_id:
+                try:
+                    question = LessonQuizQuestion.objects.get(id=q_id, quiz=quiz)
+                    question.text = request.POST.get('q_text', '').strip()
+                    question.option_a = request.POST.get('q_option_a', '').strip()
+                    question.option_b = request.POST.get('q_option_b', '').strip()
+                    question.option_c = request.POST.get('q_option_c', '').strip()
+                    question.option_d = request.POST.get('q_option_d', '').strip()
+                    question.correct_option = request.POST.get('q_correct_option', 'A') or 'A'
+                    question.save()
+                    messages.success(request, 'Question updated.')
+                except LessonQuizQuestion.DoesNotExist:
+                    messages.error(request, 'Question not found.')
         elif action == 'delete_question':
             q_id = request.POST.get('question_id')
             if q_id:
