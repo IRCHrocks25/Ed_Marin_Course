@@ -734,16 +734,38 @@
                     console.log('Frontend: Response received, length:', cleanResponse.length);
                     
                     // Only try to parse if it's still JSON (shouldn't happen, but just in case)
-                    if (typeof cleanResponse === 'string' && cleanResponse.trim().startsWith('{') && !cleanResponse.includes('\n')) {
+                    if (typeof cleanResponse === 'string' && (cleanResponse.trim().startsWith('{') || cleanResponse.trim().startsWith('[')) && !cleanResponse.includes('\n')) {
                         try {
                             const parsed = JSON.parse(cleanResponse);
-                            cleanResponse = parsed.Response || parsed.response || parsed.message || parsed.text || parsed.answer || cleanResponse;
+                            // Handle list responses (e.g., [{'output': '...'}])
+                            if (Array.isArray(parsed) && parsed.length > 0) {
+                                const firstItem = parsed[0];
+                                if (typeof firstItem === 'object' && firstItem !== null) {
+                                    cleanResponse = firstItem.output || firstItem.Output || firstItem.response || firstItem.Response || firstItem.message || firstItem.Message || firstItem.text || firstItem.Text || firstItem.answer || firstItem.Answer || cleanResponse;
+                                } else if (typeof firstItem === 'string') {
+                                    cleanResponse = firstItem;
+                                } else {
+                                    cleanResponse = String(firstItem);
+                                }
+                            } else if (typeof parsed === 'object' && parsed !== null) {
+                                // Handle dict responses
+                                cleanResponse = parsed.Response || parsed.response || parsed.message || parsed.text || parsed.answer || parsed.output || parsed.Output || cleanResponse;
+                            } else {
+                                cleanResponse = String(parsed);
+                            }
                         } catch (e) {
                             // If parsing fails, backend should have handled it, but try extraction as fallback
                             console.warn('Frontend: Still JSON-like, attempting extraction');
-                            const responseMatch = cleanResponse.match(/['"]Response['"]\s*:\s*['"]((?:[^"'\\]|\\.|\\n)*)['"]/i);
-                            if (responseMatch && responseMatch[1]) {
-                                cleanResponse = responseMatch[1].replace(/\\"/g, '"').replace(/\\'/g, "'").replace(/\\n/g, '\n');
+                            // Try to extract output field from list format
+                            const outputMatch = cleanResponse.match(/['"]output['"]\s*:\s*['"]((?:[^"'\\]|\\.|\\n)*)['"]/i);
+                            if (outputMatch && outputMatch[1]) {
+                                cleanResponse = outputMatch[1].replace(/\\"/g, '"').replace(/\\'/g, "'").replace(/\\n/g, '\n');
+                            } else {
+                                // Try to extract Response field from dict-like string
+                                const responseMatch = cleanResponse.match(/['"]Response['"]\s*:\s*['"]((?:[^"'\\]|\\.|\\n)*)['"]/i);
+                                if (responseMatch && responseMatch[1]) {
+                                    cleanResponse = responseMatch[1].replace(/\\"/g, '"').replace(/\\'/g, "'").replace(/\\n/g, '\n');
+                                }
                             }
                         }
                     }

@@ -1486,7 +1486,31 @@ def lesson_chatbot(request, lesson_id):
                 # Extract AI response (adjust based on actual webhook response format)
                 # Try multiple possible field names
                 ai_response = None
-                if isinstance(response_data, dict):
+                
+                # Handle list responses (e.g., [{'output': '...'}])
+                if isinstance(response_data, list) and len(response_data) > 0:
+                    first_item = response_data[0]
+                    if isinstance(first_item, dict):
+                        ai_response = (
+                            first_item.get('output') or 
+                            first_item.get('Output') or 
+                            first_item.get('response') or 
+                            first_item.get('Response') or 
+                            first_item.get('message') or 
+                            first_item.get('Message') or 
+                            first_item.get('text') or 
+                            first_item.get('Text') or 
+                            first_item.get('answer') or 
+                            first_item.get('Answer') or 
+                            first_item.get('content') or
+                            first_item.get('Content') or
+                            None
+                        )
+                    elif isinstance(first_item, str):
+                        ai_response = first_item
+                
+                # Handle dict responses
+                elif isinstance(response_data, dict):
                     ai_response = (
                         response_data.get('response') or 
                         response_data.get('Response') or 
@@ -1510,7 +1534,7 @@ def lesson_chatbot(request, lesson_id):
                                 ai_response = value
                                 break
                 else:
-                    # If it's not a dict, convert to string
+                    # If it's not a dict or list, convert to string
                     ai_response = str(response_data)
                 
                 # If still None, convert entire dict to string
@@ -1525,20 +1549,49 @@ def lesson_chatbot(request, lesson_id):
                     if ai_response.strip().startswith('{') or ai_response.strip().startswith('['):
                         try:
                             parsed = json.loads(ai_response)
-                            # Extract Response, response, message, text, or answer field
-                            ai_response = parsed.get('Response') or parsed.get('response') or parsed.get('message') or parsed.get('text') or parsed.get('answer') or ai_response
+                            # Handle list responses
+                            if isinstance(parsed, list) and len(parsed) > 0:
+                                first_item = parsed[0]
+                                if isinstance(first_item, dict):
+                                    ai_response = (
+                                        first_item.get('output') or 
+                                        first_item.get('Output') or 
+                                        first_item.get('response') or 
+                                        first_item.get('Response') or 
+                                        first_item.get('message') or 
+                                        first_item.get('Message') or 
+                                        first_item.get('text') or 
+                                        first_item.get('Text') or 
+                                        first_item.get('answer') or 
+                                        first_item.get('Answer') or 
+                                        ai_response
+                                    )
+                                elif isinstance(first_item, str):
+                                    ai_response = first_item
+                                else:
+                                    ai_response = str(first_item)
+                            # Handle dict responses
+                            elif isinstance(parsed, dict):
+                                ai_response = parsed.get('Response') or parsed.get('response') or parsed.get('message') or parsed.get('text') or parsed.get('answer') or parsed.get('output') or parsed.get('Output') or ai_response
+                            else:
+                                ai_response = str(parsed)
                         except (json.JSONDecodeError, TypeError):
                             # If parsing fails, try to extract quoted text
                             import re
-                            # Try to extract Response field from dict-like string
-                            response_match = re.search(r"['\"]Response['\"]\s*:\s*['\"]([^'\"]+)['\"]", ai_response, re.IGNORECASE)
-                            if response_match:
-                                ai_response = response_match.group(1)
+                            # Try to extract output field from list-like string (e.g., [{'output': '...'}])
+                            output_match = re.search(r"['\"]output['\"]\s*:\s*['\"]([^'\"]+)['\"]", ai_response, re.IGNORECASE)
+                            if output_match:
+                                ai_response = output_match.group(1)
                             else:
-                                # Try to extract any quoted text that's longer than 10 chars
-                                quoted_match = re.search(r"['\"]([^'\"]{10,})['\"]", ai_response)
-                                if quoted_match:
-                                    ai_response = quoted_match.group(1)
+                                # Try to extract Response field from dict-like string
+                                response_match = re.search(r"['\"]Response['\"]\s*:\s*['\"]([^'\"]+)['\"]", ai_response, re.IGNORECASE)
+                                if response_match:
+                                    ai_response = response_match.group(1)
+                                else:
+                                    # Try to extract any quoted text that's longer than 10 chars
+                                    quoted_match = re.search(r"['\"]([^'\"]{10,})['\"]", ai_response)
+                                    if quoted_match:
+                                        ai_response = quoted_match.group(1)
                 
                 # If response is still empty, try one more time with the full response_text
                 if not ai_response or (isinstance(ai_response, str) and not ai_response.strip()):
@@ -1548,8 +1601,28 @@ def lesson_chatbot(request, lesson_id):
                         # Try to parse it as JSON one more time
                         try:
                             text_parsed = json.loads(response_text)
-                            if isinstance(text_parsed, dict):
-                                ai_response = text_parsed.get('response') or text_parsed.get('Response') or text_parsed.get('message') or text_parsed.get('Message') or text_parsed.get('text') or text_parsed.get('Text') or text_parsed.get('answer') or text_parsed.get('Answer') or str(text_parsed)
+                            if isinstance(text_parsed, list) and len(text_parsed) > 0:
+                                first_item = text_parsed[0]
+                                if isinstance(first_item, dict):
+                                    ai_response = (
+                                        first_item.get('output') or 
+                                        first_item.get('Output') or 
+                                        first_item.get('response') or 
+                                        first_item.get('Response') or 
+                                        first_item.get('message') or 
+                                        first_item.get('Message') or 
+                                        first_item.get('text') or 
+                                        first_item.get('Text') or 
+                                        first_item.get('answer') or 
+                                        first_item.get('Answer') or 
+                                        str(first_item)
+                                    )
+                                elif isinstance(first_item, str):
+                                    ai_response = first_item
+                                else:
+                                    ai_response = str(first_item)
+                            elif isinstance(text_parsed, dict):
+                                ai_response = text_parsed.get('response') or text_parsed.get('Response') or text_parsed.get('message') or text_parsed.get('Message') or text_parsed.get('text') or text_parsed.get('Text') or text_parsed.get('answer') or text_parsed.get('Answer') or text_parsed.get('output') or text_parsed.get('Output') or str(text_parsed)
                             else:
                                 ai_response = str(text_parsed)
                         except:
