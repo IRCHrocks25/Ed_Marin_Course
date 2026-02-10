@@ -62,6 +62,7 @@ urlpatterns = [
     path('creator/', views.creator_dashboard, name='creator_dashboard'),
     path('creator/courses/<slug:course_slug>/lessons/', views.course_lessons, name='course_lessons'),
     path('creator/courses/<slug:course_slug>/add-lesson/', views.add_lesson, name='add_lesson'),
+    path('creator/courses/<slug:course_slug>/upload-pdf/', views.upload_pdf_lessons, name='upload_pdf_lessons'),
     path('creator/courses/<slug:course_slug>/lessons/<int:lesson_id>/generate/', views.generate_lesson_ai, name='generate_lesson_ai'),
     path('creator/verify-vimeo/', views.verify_vimeo_url, name='verify_vimeo_url'),
     path('creator/upload-video-transcribe/', views.upload_video_transcribe, name='upload_video_transcribe'),
@@ -80,6 +81,9 @@ urlpatterns = [
     
     # Favorite course endpoint
     path('api/courses/<int:course_id>/favorite/', views.toggle_favorite_course, name='toggle_favorite_course'),
+    
+    # Course content generation webhook endpoint
+    path('api/generate-course-content/', views.generate_course_content_webhook, name='generate_course_content_webhook'),
     
     # Admin (optional - can be removed if not needed)
     path('admin/', admin.site.urls),

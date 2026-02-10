@@ -10,6 +10,14 @@ class Course(models.Model):
         ('speaking', 'Speaking'),
         ('consultancy', 'Consultancy'),
         ('special', 'Special'),
+        ('positive_psychology', 'Positive Psychology'),
+        ('nlp', 'NLP'),
+        ('nutrition', 'Nutrition'),
+        ('naturopathy', 'Naturopathy'),
+        ('hypnotherapy', 'Hypnotherapy'),
+        ('ayurveda', 'Ayurveda'),
+        ('art_therapy', 'Art Therapy'),
+        ('aroma_therapy', 'Aroma Therapy'),
     ]
     
     STATUS_CHOICES = [
@@ -335,6 +343,27 @@ class CourseEnrollment(models.Model):
     
     def __str__(self):
         return f"{self.user.username} - {self.course.name}"
+    
+    def days_until_exam(self):
+        """Calculate days until exam is available"""
+        if self.payment_type == 'full':
+            return 0
+        days_elapsed = (timezone.now() - self.enrolled_at).days
+        return max(0, self.course.exam_unlock_days - days_elapsed)
+    
+    def is_exam_available(self):
+        """Check if exam is available based on payment type and course completion"""
+        if self.payment_type == 'full':
+            # Check if all lessons are completed
+            total_lessons = self.course.lessons.count()
+            completed_lessons = UserProgress.objects.filter(
+                user=self.user,
+                lesson__course=self.course,
+                completed=True
+            ).count()
+            return completed_lessons >= total_lessons and total_lessons > 0
+        else:
+            return self.days_until_exam() == 0
 
 
 class FavoriteCourse(models.Model):

@@ -6,6 +6,7 @@ from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 from django.contrib import messages
 from django.conf import settings
+from django.utils.text import slugify
 from datetime import datetime
 import json
 import re
@@ -554,6 +555,238 @@ def generate_lesson_ai(request, course_slug, lesson_id):
         'course': course,
         'lesson': lesson,
     })
+
+
+@staff_member_required
+def upload_pdf_lessons(request, course_slug):
+    """Upload PDF files and generate lesson content"""
+    course = get_object_or_404(Course, slug=course_slug)
+    
+    if request.method == 'POST':
+        module_name = request.POST.get('module_name', '').strip()
+        pdf_files = request.FILES.getlist('pdf_files')
+        use_ai = request.POST.get('use_ai_generation') == 'on'
+        split_by_pages = request.POST.get('split_by_pages')
+        split_by_pages = int(split_by_pages) if split_by_pages and split_by_pages.isdigit() else None
+        
+        if not module_name:
+            messages.error(request, 'Module name is required.')
+            return render(request, 'creator/upload_pdf_lessons.html', {
+                'course': course,
+            })
+        
+        if not pdf_files:
+            messages.error(request, 'Please select at least one PDF file.')
+            return render(request, 'creator/upload_pdf_lessons.html', {
+                'course': course,
+            })
+        
+        # Import utilities
+        try:
+            from myApp.utils.pdf_extractor import PDFExtractor
+            from myApp.utils.ai_content_generator import AIContentGenerator
+            from django.db.models import Max
+        except ImportError as e:
+            messages.error(request, f'Required packages not installed: {str(e)}')
+            return render(request, 'creator/upload_pdf_lessons.html', {
+                'course': course,
+            })
+        
+        # Initialize extractor and AI generator
+        pdf_extractor = PDFExtractor()
+        ai_generator = None
+        if use_ai:
+            try:
+                ai_generator = AIContentGenerator()
+            except Exception as e:
+                messages.warning(request, f'AI generation not available: {str(e)}. Using basic text extraction.')
+                use_ai = False
+        
+        # Get or create module
+        module, module_created = Module.objects.get_or_create(
+            course=course,
+            name=module_name,
+            defaults={
+                'order': (Module.objects.filter(course=course).aggregate(max_order=Max('order'))['max_order'] or 0) + 1,
+                'description': f'Module content for {module_name}'
+            }
+        )
+        
+        if module_created:
+            messages.success(request, f'Created module: {module_name}')
+        
+        # Process each PDF
+        lessons_created = 0
+        lessons_updated = 0
+        errors = []
+        
+        for pdf_file in pdf_files:
+            try:
+                # Save uploaded file temporarily
+                import tempfile
+                with tempfile.NamedTemporaryFile(delete=False, suffix='.pdf') as temp_file:
+                    for chunk in pdf_file.chunks():
+                        temp_file.write(chunk)
+                    temp_path = temp_file.name
+                
+                try:
+                    if split_by_pages and split_by_pages > 0:
+                        # Split PDF into multiple lessons
+                        chunks = pdf_extractor.extract_by_pages(temp_path, split_by_pages)
+                        
+                        for i, chunk in enumerate(chunks, 1):
+                            suggested_title = f"{os.path.splitext(pdf_file.name)[0]} - Part {i}"
+                            created, updated = _process_pdf_chunk(
+                                course, module, chunk['text'], suggested_title,
+                                ai_generator, not use_ai, course.name, module_name
+                            )
+                            lessons_created += created
+                            lessons_updated += updated
+                    else:
+                        # Process entire PDF as single lesson
+                        pdf_text = pdf_extractor.extract_text(temp_path)
+                        suggested_title = os.path.splitext(pdf_file.name)[0]
+                        
+                        created, updated = _process_pdf_chunk(
+                            course, module, pdf_text, suggested_title,
+                            ai_generator, not use_ai, course.name, module_name
+                        )
+                        lessons_created += created
+                        lessons_updated += updated
+                        
+                finally:
+                    # Clean up temporary file
+                    if os.path.exists(temp_path):
+                        try:
+                            os.remove(temp_path)
+                        except:
+                            pass
+                            
+            except Exception as e:
+                errors.append(f"Error processing {pdf_file.name}: {str(e)}")
+                continue
+        
+        # Show results
+        if lessons_created > 0:
+            messages.success(request, f'Successfully created {lessons_created} lesson(s)!')
+        if lessons_updated > 0:
+            messages.info(request, f'Updated {lessons_updated} existing lesson(s).')
+        if errors:
+            for error in errors:
+                messages.error(request, error)
+        
+        return redirect('course_lessons', course_slug=course_slug)
+    
+    return render(request, 'creator/upload_pdf_lessons.html', {
+        'course': course,
+    })
+
+
+def _process_pdf_chunk(course, module, pdf_text, suggested_title, ai_generator, skip_ai, course_name, module_name):
+    """Helper method to process PDF chunk and create/update lesson"""
+    from django.db.models import Max
+    
+    created = 0
+    updated = 0
+    
+    # Generate lesson slug
+    lesson_slug = slugify(suggested_title)
+    
+    # Get next order number
+    max_order = Lesson.objects.filter(course=course, module=module).aggregate(
+        max_order=Max('order')
+    )['max_order'] or 0
+    
+    if skip_ai or not ai_generator:
+        # Create basic lesson without AI generation
+        lesson, was_created = Lesson.objects.get_or_create(
+            course=course,
+            module=module,
+            slug=lesson_slug,
+            defaults={
+                'title': suggested_title,
+                'description': pdf_text[:500] + '...' if len(pdf_text) > 500 else pdf_text,
+                'order': max_order + 1,
+                'lesson_type': 'video',
+                'ai_generation_status': 'pending',
+            }
+        )
+        
+        if was_created:
+            created = 1
+        else:
+            updated = 1
+    else:
+        # Generate AI content
+        try:
+            ai_content = ai_generator.generate_lesson_content(
+                pdf_text=pdf_text,
+                course_name=course_name,
+                module_name=module_name,
+                suggested_title=suggested_title
+            )
+            
+            # Convert content blocks to Editor.js format
+            editorjs_content = ai_generator.convert_to_editorjs_format(
+                ai_content['content_blocks']
+            )
+            
+            # Create or update lesson
+            lesson, was_created = Lesson.objects.get_or_create(
+                course=course,
+                module=module,
+                slug=lesson_slug,
+                defaults={
+                    'title': ai_content['clean_title'],
+                    'description': ai_content['full_description'],
+                    'order': max_order + 1,
+                    'lesson_type': 'video',
+                    'content': editorjs_content,
+                    'ai_generation_status': 'generated',
+                    'ai_clean_title': ai_content['clean_title'],
+                    'ai_short_summary': ai_content['short_summary'],
+                    'ai_full_description': ai_content['full_description'],
+                    'ai_outcomes': ai_content['outcomes'],
+                    'ai_coach_actions': ai_content['coach_actions'],
+                }
+            )
+            
+            if was_created:
+                created = 1
+            else:
+                # Update existing lesson
+                lesson.title = ai_content['clean_title']
+                lesson.description = ai_content['full_description']
+                lesson.content = editorjs_content
+                lesson.ai_generation_status = 'generated'
+                lesson.ai_clean_title = ai_content['clean_title']
+                lesson.ai_short_summary = ai_content['short_summary']
+                lesson.ai_full_description = ai_content['full_description']
+                lesson.ai_outcomes = ai_content['outcomes']
+                lesson.ai_coach_actions = ai_content['coach_actions']
+                lesson.save()
+                updated = 1
+                
+        except Exception as e:
+            # Fall back to basic lesson creation
+            lesson, was_created = Lesson.objects.get_or_create(
+                course=course,
+                module=module,
+                slug=lesson_slug,
+                defaults={
+                    'title': suggested_title,
+                    'description': pdf_text[:500] + '...' if len(pdf_text) > 500 else pdf_text,
+                    'order': max_order + 1,
+                    'lesson_type': 'video',
+                    'ai_generation_status': 'pending',
+                }
+            )
+            if was_created:
+                created = 1
+            else:
+                updated = 1
+    
+    return created, updated
 
 
 @require_http_methods(["POST"])
@@ -1700,3 +1933,272 @@ def lesson_chatbot(request, lesson_id):
             'success': False,
             'error': str(e)
         }, status=500)
+
+
+@require_http_methods(["POST"])
+@staff_member_required
+def generate_course_content_webhook(request):
+    """
+    Webhook endpoint to generate course content, modules, and lessons.
+    
+    Expected payload:
+    {
+        "course": "positive_psychology" | "nlp" | "nutrition" | etc.,
+        "module": "Module1" | "Module2" | etc.,
+        "webhook_url": "https://..." (optional, uses default if not provided)
+    }
+    
+    The webhook response should have content under "Response" field.
+    """
+    # Default webhook URL - can be overridden in request
+    DEFAULT_WEBHOOK_URL = "https://katalyst-crm2.fly.dev/webhook/d90c3bb9-89f7-4658-86ba-f5406662b2b3"
+    
+    try:
+        data = json.loads(request.body)
+        
+        # Extract course and module from request
+        course_type = data.get('course')
+        module_name = data.get('module')
+        webhook_url = data.get('webhook_url', DEFAULT_WEBHOOK_URL)
+        
+        # Validate required fields
+        if not course_type:
+            return JsonResponse({
+                'success': False,
+                'error': 'Course parameter is required'
+            }, status=400)
+        
+        if not module_name:
+            return JsonResponse({
+                'success': False,
+                'error': 'Module parameter is required'
+            }, status=400)
+        
+        # Validate course type
+        valid_course_types = [
+            'positive_psychology', 'nlp', 'nutrition', 'naturopathy',
+            'hypnotherapy', 'ayurveda', 'art_therapy', 'aroma_therapy'
+        ]
+        
+        if course_type not in valid_course_types:
+            return JsonResponse({
+                'success': False,
+                'error': f'Invalid course type. Must be one of: {", ".join(valid_course_types)}'
+            }, status=400)
+        
+        # Prepare payload for webhook with metadata filtering
+        webhook_payload = {
+            'course': course_type,
+            'module': module_name,
+            'metadata': {
+                'course': course_type,
+                'module': module_name,
+            }
+        }
+        
+        # Call the webhook
+        try:
+            response = requests.post(
+                webhook_url,
+                json=webhook_payload,
+                headers={'Content-Type': 'application/json'},
+                timeout=60  # Longer timeout for content generation
+            )
+            
+            if response.status_code != 200:
+                return JsonResponse({
+                    'success': False,
+                    'error': f'Webhook returned status {response.status_code}: {response.text[:500]}'
+                }, status=500)
+            
+            # Parse webhook response
+            try:
+                webhook_response = response.json()
+            except ValueError:
+                return JsonResponse({
+                    'success': False,
+                    'error': 'Webhook did not return valid JSON'
+                }, status=500)
+            
+            # Extract content from Response field
+            response_content = webhook_response.get('Response') or webhook_response.get('response')
+            
+            if not response_content:
+                return JsonResponse({
+                    'success': False,
+                    'error': 'Webhook response does not contain Response field',
+                    'webhook_response': webhook_response
+                }, status=500)
+            
+            # Parse the response content (should be JSON with course/module/lesson structure)
+            if isinstance(response_content, str):
+                try:
+                    response_content = json.loads(response_content)
+                except json.JSONDecodeError:
+                    # If it's not JSON, treat it as plain text description
+                    response_content = {'description': response_content}
+            
+            # Process the response content and create/update course, module, and lessons
+            result = process_course_content_response(
+                course_type=course_type,
+                module_name=module_name,
+                content_data=response_content
+            )
+            
+            return JsonResponse({
+                'success': True,
+                'message': 'Content generated successfully',
+                'result': result
+            })
+            
+        except requests.exceptions.RequestException as e:
+            return JsonResponse({
+                'success': False,
+                'error': f'Failed to connect to webhook: {str(e)}'
+            }, status=500)
+            
+    except json.JSONDecodeError:
+        return JsonResponse({'success': False, 'error': 'Invalid JSON'}, status=400)
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)
+
+
+def process_course_content_response(course_type, module_name, content_data):
+    """
+    Process webhook response and create/update course, module, and lessons.
+    
+    Expected content_data structure:
+    {
+        "course": {
+            "name": "Positive Psychology",
+            "description": "...",
+            "short_description": "...",
+            ...
+        },
+        "module": {
+            "name": "Module1",
+            "description": "...",
+            "order": 1
+        },
+        "lessons": [
+            {
+                "title": "Lesson 1",
+                "description": "...",
+                "order": 1,
+                ...
+            },
+            ...
+        ]
+    }
+    """
+    result = {
+        'course_created': False,
+        'course_updated': False,
+        'module_created': False,
+        'module_updated': False,
+        'lessons_created': 0,
+        'lessons_updated': 0,
+        'errors': []
+    }
+    
+    try:
+        # Get or create course
+        course_name = content_data.get('course', {}).get('name') or course_type.replace('_', ' ').title()
+        course_slug = slugify(course_name)
+        
+        course, created = Course.objects.get_or_create(
+            slug=course_slug,
+            defaults={
+                'name': course_name,
+                'course_type': course_type,
+                'description': content_data.get('course', {}).get('description', ''),
+                'short_description': content_data.get('course', {}).get('short_description', '')[:300],
+                'status': 'active',
+            }
+        )
+        
+        if created:
+            result['course_created'] = True
+        else:
+            # Update existing course
+            course.description = content_data.get('course', {}).get('description', course.description)
+            course.short_description = content_data.get('course', {}).get('short_description', course.short_description)[:300]
+            course.course_type = course_type
+            course.save()
+            result['course_updated'] = True
+        
+        # Get or create module
+        module_data = content_data.get('module', {})
+        module_display_name = module_data.get('name') or module_name
+        module_order = module_data.get('order', 0)
+        
+        module, module_created = Module.objects.get_or_create(
+            course=course,
+            name=module_display_name,
+            defaults={
+                'description': module_data.get('description', ''),
+                'order': module_order,
+            }
+        )
+        
+        if module_created:
+            result['module_created'] = True
+        else:
+            # Update existing module
+            module.description = module_data.get('description', module.description)
+            module.order = module_order
+            module.save()
+            result['module_updated'] = True
+        
+        # Process lessons
+        lessons_data = content_data.get('lessons', [])
+        
+        if not isinstance(lessons_data, list):
+            result['errors'].append('Lessons data is not a list')
+            return result
+        
+        for lesson_data in lessons_data:
+            try:
+                lesson_title = lesson_data.get('title', '')
+                if not lesson_title:
+                    result['errors'].append('Lesson missing title')
+                    continue
+                
+                lesson_slug = slugify(lesson_title)
+                lesson_order = lesson_data.get('order', 0)
+                
+                lesson, lesson_created = Lesson.objects.get_or_create(
+                    course=course,
+                    module=module,
+                    slug=lesson_slug,
+                    defaults={
+                        'title': lesson_title,
+                        'description': lesson_data.get('description', ''),
+                        'order': lesson_order,
+                        'lesson_type': lesson_data.get('lesson_type', 'video'),
+                    }
+                )
+                
+                if lesson_created:
+                    result['lessons_created'] += 1
+                else:
+                    # Update existing lesson
+                    lesson.title = lesson_title
+                    lesson.description = lesson_data.get('description', lesson.description)
+                    lesson.order = lesson_order
+                    lesson.save()
+                    result['lessons_updated'] += 1
+                    
+            except Exception as e:
+                result['errors'].append(f'Error processing lesson: {str(e)}')
+                continue
+        
+    except Exception as e:
+        result['errors'].append(f'Error processing content: {str(e)}')
+    
+    return result
+
+

@@ -4,14 +4,14 @@
 {% block title %}Add Lesson - {{ course.name }}{% endblock %}
 
 {% block content %}
-<div class="w-full min-h-screen bg-[#ffffff] py-8">
+<div class="w-full min-h-screen bg-slate-50 py-8">
     <div class="max-w-[1600px] mx-auto px-6">
         <!-- Header -->
         <div class="mb-8">
-            <a href="{% url 'course_lessons' course.slug %}" class="text-teal-soft hover:text-teal-soft/80 text-sm mb-4 inline-flex items-center gap-2">
+            <a href="{% url 'course_lessons' course.slug %}" class="text-teal-700 hover:text-teal-800 text-sm mb-4 inline-flex items-center gap-2">
                 <i class="fas fa-arrow-left"></i> Back to {{ course.name }}
             </a>
-            <h1 class="text-4xl font-bold mb-2">Add New Lesson</h1>
+            <h1 class="text-4xl font-bold mb-2 text-slate-900">Add New Lesson</h1>
             <p class="text-gray-700">Upload your video and let AI organize everything</p>
         </div>
 
@@ -19,7 +19,7 @@
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <!-- Left Column: Main Form -->
             <div class="lg:col-span-2">
-                <div class="bg-[#0f1529]/80 backdrop-blur-sm border border-teal-soft/10 rounded-2xl p-8 shadow-2xl">
+                <div class="bg-white border border-slate-200 rounded-2xl p-8 shadow-xl">
                     <form method="POST" id="lesson-form" enctype="multipart/form-data">
                         {% csrf_token %}
                         
@@ -27,7 +27,7 @@
                         <div class="mb-8">
                             <div class="flex items-center gap-3 mb-6">
                                 <div class="w-10 h-10 rounded-full bg-gradient-to-br from-teal-soft to-blue-soft text-[#ffffff] flex items-center justify-center font-bold text-lg">1</div>
-                                <h2 class="text-2xl font-bold">Video Input</h2>
+                                <h2 class="text-2xl font-bold text-slate-900">Video Input</h2>
                             </div>
                             
                             <div class="space-y-6">
@@ -74,7 +74,7 @@
                                         <div class="w-full border-t border-teal-soft/10"></div>
                                     </div>
                                     <div class="relative flex justify-center text-sm">
-                                        <span class="px-4 bg-[#0f1529] text-gray-500 uppercase tracking-wider">OR</span>
+                                        <span class="px-4 bg-white text-slate-500 uppercase tracking-wider">OR</span>
                                     </div>
                                 </div>
                                 
@@ -88,7 +88,7 @@
                                         name="vimeo_url" 
                                         id="vimeo-url"
                                         placeholder="https://vimeo.com/xxxxxxxxx"
-                                        class="w-full bg-[#ffffff]/60 border border-teal-soft/20 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-teal-soft/50 focus:bg-[#ffffff]/80 transition-all"
+                                        class="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-teal-500 focus:ring-4 focus:ring-teal-500/10 transition-all"
                                     >
                                     <p class="text-xs text-gray-700 mt-2">
                                         We'll automatically detect metadata, duration, and thumbnail.
@@ -100,7 +100,7 @@
                                     <div class="flex gap-4">
                                         <img id="preview-thumbnail" src="" alt="Video thumbnail" class="w-40 h-24 object-cover rounded-lg">
                                         <div class="flex-1">
-                                            <div id="preview-title" class="font-semibold text-gray-700 mb-2 text-white"></div>
+                                            <div id="preview-title" class="font-semibold text-slate-900 mb-2"></div>
                                             <div class="text-sm text-gray-700 mb-2">
                                                 <i class="fas fa-clock mr-2"></i>
                                                 <span id="preview-duration"></span>
@@ -131,7 +131,7 @@
                                         type="text" 
                                         name="working_title" 
                                         placeholder="Sprint 8.0 – Session 1: Orientation"
-                                        class="w-full bg-[#ffffff]/60 border border-teal-soft/20 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-teal-soft/50 focus:bg-[#ffffff]/80 transition-all"
+                                        class="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-teal-500 focus:ring-4 focus:ring-teal-500/10 transition-all"
                                         required
                                     >
                                 </div>
@@ -176,7 +176,7 @@
             
             <!-- Right Column: Transcription Panel -->
             <div class="lg:col-span-1">
-                <div class="bg-[#0f1529]/80 backdrop-blur-sm border border-teal-soft/10 rounded-2xl p-6 shadow-2xl sticky top-24">
+                <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-xl sticky top-24">
                     <div class="flex items-center justify-between mb-6">
                         <h3 class="text-lg font-bold flex items-center gap-2">
                             <i class="fas fa-file-alt text-teal-soft"></i>
@@ -254,7 +254,7 @@
                 <i class="fas fa-exclamation-triangle text-red-400"></i>
             </div>
             <div>
-                <h3 class="text-lg font-semibold text-gray-700 text-white mb-1" id="global-lesson-modal-title">Heads up</h3>
+                <h3 class="text-lg font-semibold text-slate-900 mb-1" id="global-lesson-modal-title">Heads up</h3>
                 <p id="global-lesson-modal-message" class="text-sm text-gray-700 leading-relaxed"></p>
             </div>
         </div>
