@@ -246,7 +246,7 @@
                         <div class="flex items-center justify-between">
                             <span class="text-sm text-gray-700">Status</span>
                             <span class="px-3 py-1 rounded-full text-xs font-semibold text-gray-700
-                                {% if cert.status == 'passed' %}bg-yellow-500/20 text-yellow-300 border border-yellow-500/30
+                                {% if cert.status == 'passed' %}bg-yellow-500/20 text-black-300 border border-yellow-500/30
                                 {% elif cert.status == 'failed' %}bg-red-500/20 text-red-400 border border-red-500/30
                                 {% elif cert.status == 'eligible' %}bg-teal-soft/20 text-teal-soft border border-teal-soft/30
                                 {% else %}bg-gray-500/20 text-gray-700 border border-gray-500/30{% endif %}">
@@ -270,11 +270,31 @@
             </div>
             
             {% if cert.accredible_certificate_url %}
-            <a href="{{ cert.accredible_certificate_url }}" target="_blank" class="block w-full px-4 py-3 bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-500/90 hover:to-yellow-600/90 text-white font-semibold text-gray-700 rounded-lg transition-all text-center">
+            <a href="{{ cert.accredible_certificate_url }}" target="_blank" class="block w-full px-5 py-3 
+bg-[#074d0a] 
+hover:bg-[#063f08] 
+text-white 
+font-semibold tracking-wide 
+rounded-lg 
+shadow-lg shadow-black/20
+hover:-translate-y-0.5 hover:shadow-xl
+transition-all duration-200 
+text-center"
+>
                 <i class="fas fa-download mr-2"></i>Download Certificate
             </a>
             {% elif cert.status == 'passed' %}
-            <a href="{% url 'view_certificate' cert.course.slug %}" target="_blank" class="block w-full px-4 py-3 bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-500/90 hover:to-yellow-600/90 text-white font-semibold text-gray-700 rounded-lg transition-all text-center">
+            <a href="{% url 'view_certificate' cert.course.slug %}" target="_blank" class="block w-full px-5 py-3 
+bg-[#074d0a] 
+hover:bg-[#063f08] 
+text-white 
+font-semibold tracking-wide 
+rounded-lg 
+shadow-lg shadow-black/20
+hover:-translate-y-0.5 hover:shadow-xl
+transition-all duration-200 
+text-center"
+>
                 <i class="fas fa-download mr-2"></i>Download Certificate
             </a>
             {% elif cert.status == 'eligible' %}
@@ -305,7 +325,16 @@
             <div class="bg-[#ffffff]/60 backdrop-blur-sm border border-teal-soft/10 rounded-xl p-6">
                 <h3 class="text-lg font-bold mb-2">{{ course.name }}</h3>
                 <p class="text-sm text-gray-700 mb-4">You've completed all lessons. Take the final exam to earn your certification!</p>
-                <a href="{% url 'student_course_progress' course.slug %}" class="inline-block px-4 py-2 bg-gradient-to-r from-teal-soft to-blue-soft hover:from-teal-soft/90 hover:to-blue-soft/90 text-[#ffffff] font-semibold text-gray-700 rounded-lg transition-all">
+                <a href="{% url 'student_course_progress' course.slug %}" class="inline-block px-5 py-2.5 
+bg-[#074d0a] 
+hover:bg-[#063f08] 
+text-white 
+font-semibold tracking-wide 
+rounded-lg 
+shadow-lg shadow-black/20 
+hover:-translate-y-0.5 hover:shadow-xl 
+transition-all duration-200"
+>
                     View Course & Exam
                 </a>
             </div>

@@ -102,7 +102,7 @@
                 </div>
 
                 {% if course.special_tag %}
-                <div class="absolute right-4 top-4 inline-flex items-center rounded-full bg-coral-cta px-3 py-1 text-[11px] font-extrabold text-white shadow-lg shadow-coral-cta/20">
+                <div class="absolute right-4 top-4 inline-flex items-center rounded-full bg-coral-cta px-3 py-1 text-[11px] font-extrabold text-white shadow-lg shadow-ayur-green/25">
                   {{ course.special_tag }}
                 </div>
                 {% endif %}
@@ -160,8 +160,14 @@
                     {% if data.progress_percentage and data.progress_percentage >= 100 %}
                       {# Course completed - show certificate/view details button only #}
                       <a href="{% url 'student_course_progress' course.slug %}"
-                         class="flex-1 inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-yellow-500 to-yellow-600 px-4 py-2.5 text-sm font-extrabold text-white shadow-lg shadow-yellow-500/20 transition
-                                hover:-translate-y-0.5 hover:shadow-xl hover:shadow-yellow-500/25">
+                         class="flex-1 inline-flex items-center justify-center
+rounded-2xl
+bg-[#074d0a]
+px-5 py-2.5
+text-sm font-semibold tracking-wide text-white
+shadow-[0_12px_30px_-10px_rgba(0,0,0,0.35)]
+transition duration-200
+hover:-translate-y-0.5 hover:brightness-110">
                         <i class="fas fa-certificate mr-2 text-xs"></i>
                         View Certificate
                       </a>
@@ -169,7 +175,7 @@
                       {# Course in progress - show continue and progress buttons #}
                       {% if course.lessons.first %}
                         <a href="{% url 'lesson_detail' course.slug course.lessons.first.slug %}"
-                           class="flex-1 inline-flex items-center justify-center rounded-2xl bg-coral-cta px-4 py-2.5 text-sm font-extrabold text-white shadow-lg shadow-coral-cta/20 transition
+                           class="flex-1 inline-flex items-center justify-center rounded-2xl bg-coral-cta px-4 py-2.5 text-sm font-extrabold text-white shadow-lg shadow-ayur-green/25 transition
                                   hover:-translate-y-0.5 hover:shadow-xl hover:shadow-coral-cta/25">
                           Continue
                           <i class="fas fa-arrow-right ml-2 text-xs"></i>
@@ -273,7 +279,7 @@
                     {% elif course.lessons.first %}
                       {# Course not started or in progress #}
                       <a href="{% url 'lesson_detail' course.slug course.lessons.first.slug %}"
-                         class="w-full inline-flex items-center justify-center rounded-2xl bg-coral-cta px-4 py-2.5 text-sm font-extrabold text-white shadow-lg shadow-coral-cta/20 transition
+                         class="w-full inline-flex items-center justify-center rounded-2xl bg-coral-cta px-4 py-2.5 text-sm font-extrabold text-white shadow-lg shadow-ayur-green/25 transition
                                 hover:-translate-y-0.5 hover:shadow-xl hover:shadow-coral-cta/25">
                         {% if data.progress_percentage and data.progress_percentage > 0 %}
                           Continue
@@ -337,7 +343,7 @@
                 <div class="mt-auto pt-5">
                   {% if course.status == 'active' %}
                     <a href="{% url 'course_detail' course.slug %}"
-                       class="w-full inline-flex items-center justify-center rounded-2xl bg-coral-cta px-4 py-2.5 text-sm font-extrabold text-white shadow-lg shadow-coral-cta/20 transition
+                       class="w-full inline-flex items-center justify-center rounded-2xl bg-coral-cta px-4 py-2.5 text-sm font-extrabold text-white shadow-lg shadow-ayur-green/25 transition
                               hover:-translate-y-0.5 hover:shadow-xl hover:shadow-coral-cta/25">
                       View course
                       <i class="fas fa-arrow-right ml-2 text-xs"></i>

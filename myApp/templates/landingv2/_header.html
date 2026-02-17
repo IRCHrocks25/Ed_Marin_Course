@@ -1,0 +1,90 @@
+<header id="landing-nav" class="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-gray-200">
+    <div class="max-w-7xl mx-auto px-6 lg:px-8">
+        <!-- Main nav -->
+        <div class="flex items-center justify-between py-4">
+            <!-- Logo -->
+            <a href="{% url 'home' %}" class="flex items-center gap-3 hover:opacity-90 transition-opacity">
+                <div class="h-10 w-10 rounded-lg bg-coral-cta flex items-center justify-center shadow-sm">
+                    <span class="text-sm font-bold serif text-white">PL</span>
+                </div>
+                <div class="hidden sm:flex flex-col">
+                    <span class="text-base font-bold serif text-ayur-green">PrimoLearn</span>
+                    <span class="text-[11px] text-gray-600 sans">Online Wellness & Development Academy</span>
+                </div>
+            </a>
+
+            <!-- Center nav -->
+            <nav class="hidden md:flex items-center gap-8 text-sm sans text-gray-700">
+                <a href="{% url 'courses' %}" class="hover:text-ayur-green transition-colors font-medium">Courses</a>
+                <a href="#course-architecture" class="hover:text-ayur-green transition-colors font-medium">Curriculum</a>
+                <a href="#key-outcomes" class="hover:text-ayur-green transition-colors font-medium">Outcomes</a>
+                <a href="#credibility" class="hover:text-ayur-green transition-colors font-medium">Accreditations</a>
+            </nav>
+
+            <!-- Actions -->
+            <div class="hidden sm:flex items-center gap-4">
+                <a href="{% url 'login' %}" class="text-sm font-semibold sans text-ayur-green hover:text-ayur-green-light transition-colors">
+                    Log in
+                </a>
+                <a href="#enroll-cta" class="inline-flex items-center justify-center px-5 py-2.5 rounded-lg text-sm font-semibold sans text-white bg-ayur-gold hover:bg-ayur-gold-light shadow-md transition-all hover:-translate-y-0.5">
+                    Enroll Now
+                </a>
+            </div>
+
+            <!-- Mobile menu icon -->
+            <button id="landing-mobile-menu-btn" class="sm:hidden inline-flex items-center justify-center h-10 w-10 rounded-lg border border-gray-300 text-gray-700 bg-white hover:bg-gray-50">
+                <i id="landing-mobile-menu-icon" class="fas fa-bars text-base"></i>
+            </button>
+        </div>
+
+        <!-- Mobile menu -->
+        <div id="landing-mobile-menu" class="md:hidden border-t border-gray-200 bg-white hidden pb-4">
+            <div class="space-y-2 text-sm sans">
+                <a href="{% url 'courses' %}" class="block rounded-lg px-4 py-2.5 text-gray-700 hover:bg-coral-cta/10 hover:text-ayur-green transition-colors">
+                    Courses
+                </a>
+                <a href="#course-architecture" class="block rounded-lg px-4 py-2.5 text-gray-700 hover:bg-coral-cta/10 hover:text-ayur-green transition-colors">
+                    Curriculum
+                </a>
+                <a href="#key-outcomes" class="block rounded-lg px-4 py-2.5 text-gray-700 hover:bg-coral-cta/10 hover:text-ayur-green transition-colors">
+                    Outcomes
+                </a>
+                <a href="#credibility" class="block rounded-lg px-4 py-2.5 text-gray-700 hover:bg-coral-cta/10 hover:text-ayur-green transition-colors">
+                    Accreditations
+                </a>
+                <div class="h-px bg-gray-200 my-2"></div>
+                <a href="{% url 'login' %}" class="block rounded-lg px-4 py-2.5 text-ayur-green font-semibold hover:bg-coral-cta/10 transition-colors">
+                    Log in
+                </a>
+                <a href="#enroll-cta" class="block mt-1 rounded-lg px-4 py-2.5 text-center font-semibold sans text-white bg-ayur-gold hover:bg-ayur-gold-light">
+                    Enroll Now
+                </a>
+            </div>
+        </div>
+    </div>
+</header>
+
+<script>
+    // Mobile menu toggle
+    document.addEventListener('DOMContentLoaded', function() {
+        const mobileMenuBtn = document.getElementById('landing-mobile-menu-btn');
+        const mobileMenu = document.getElementById('landing-mobile-menu');
+        const mobileMenuIcon = document.getElementById('landing-mobile-menu-icon');
+
+        if (mobileMenuBtn && mobileMenu) {
+            mobileMenuBtn.addEventListener('click', function() {
+                mobileMenu.classList.toggle('hidden');
+                if (mobileMenuIcon) {
+                    if (mobileMenu.classList.contains('hidden')) {
+                        mobileMenuIcon.classList.remove('fa-times');
+                        mobileMenuIcon.classList.add('fa-bars');
+                    } else {
+                        mobileMenuIcon.classList.remove('fa-bars');
+                        mobileMenuIcon.classList.add('fa-times');
+                    }
+                }
+            });
+        }
+    });
+</script>
+

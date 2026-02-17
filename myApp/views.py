@@ -270,7 +270,7 @@ def home(request):
     }
     
     # Render the new premium landing page instead of the old partialsv2 hub
-    return render(request, 'landing.html', {
+    return render(request, 'landingv2.html', {
         'courses': courses,
         'courses_data': courses_data,
         'categories': categories_list,
